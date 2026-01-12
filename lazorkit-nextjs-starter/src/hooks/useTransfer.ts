@@ -43,6 +43,29 @@ export const useTransfer = () => {
   const [transferError, setTransferError] = useState<string | null>(null);
 
   /**
+   * Validates that the wallet session is ready for signing
+   * Checks if signAndSendTransaction is available and wallet is connected
+   */
+  const validateWalletSession = useCallback((): string | null => {
+    if (!smartWalletPubkey) {
+      return 'Wallet not connected. Please connect your wallet first.';
+    }
+
+    if (!signAndSendTransaction) {
+      return 'Wallet connection incomplete. Please reconnect your wallet.';
+    }
+
+    // Check if smartWalletPubkey is valid
+    try {
+      new PublicKey(smartWalletPubkey);
+    } catch (error) {
+      return 'Invalid wallet address. Please reconnect your wallet.';
+    }
+
+    return null;
+  }, [smartWalletPubkey, signAndSendTransaction]);
+
+  /**
    * Validates recipient address matches user's current address
    */
   const validateRecipient = useCallback(
@@ -64,8 +87,10 @@ export const useTransfer = () => {
       recipientAddress: string,
       amount: number // in SOL
     ): Promise<TransferResult> => {
-      if (!smartWalletPubkey) {
-        return { success: false, error: 'Wallet not connected' };
+      // Validate wallet session first
+      const sessionError = validateWalletSession();
+      if (sessionError) {
+        return { success: false, error: sessionError };
       }
 
       try {
@@ -74,6 +99,7 @@ export const useTransfer = () => {
         logger.info('useTransfer', 'Starting SOL transfer', {
           recipient: recipientAddress.substring(0, 10),
           amount,
+          senderAddress: smartWalletPubkey.toString().substring(0, 10),
         });
 
         // Validate inputs
@@ -81,6 +107,13 @@ export const useTransfer = () => {
         if (recipientValidationError) {
           setTransferError(recipientValidationError);
           return { success: false, error: recipientValidationError };
+        }
+
+        // Validate amount
+        if (amount <= 0) {
+          const error = 'Amount must be greater than 0';
+          setTransferError(error);
+          return { success: false, error };
         }
 
         const recipientPubkey = new PublicKey(recipientAddress);
@@ -92,7 +125,12 @@ export const useTransfer = () => {
           lamports: solToLamports(amount),
         });
 
+        logger.debug('useTransfer', 'Instruction created successfully', {
+          instruction: instruction.programId.toString().substring(0, 10),
+        });
+
         // Sign and send via Lazorkit (gasless)
+        logger.info('useTransfer', 'Sending transaction to Lazorkit portal...');
         const signature = await signAndSendTransaction({
           instructions: [instruction],
           transactionOptions: {
@@ -125,13 +163,24 @@ export const useTransfer = () => {
           'Transfer failed. Please try again.'
         );
         setTransferError(errorMessage);
-        logger.error('useTransfer', 'SOL transfer failed', error as Error);
+        
+        // Detailed logging for signing failures
+        const err = error as Error;
+        if (err.message?.includes('sign') || err.message?.toLowerCase().includes('signing')) {
+          logger.error('useTransfer', 'SOL transfer signing failed', err, {
+            type: 'SIGNING_FAILURE',
+            tokenType: 'SOL',
+          });
+        } else {
+          logger.error('useTransfer', 'SOL transfer failed', err);
+        }
+        
         return { success: false, error: errorMessage };
       } finally {
         setIsProcessing(false);
       }
     },
-    [smartWalletPubkey, signAndSendTransaction, validateRecipient, addTransaction]
+    [smartWalletPubkey, signAndSendTransaction, validateRecipient, validateWalletSession, addTransaction]
   );
 
   /**
@@ -142,8 +191,10 @@ export const useTransfer = () => {
       recipientAddress: string,
       amount: number // in USDC tokens
     ): Promise<TransferResult> => {
-      if (!smartWalletPubkey) {
-        return { success: false, error: 'Wallet not connected' };
+      // Validate wallet session first
+      const sessionError = validateWalletSession();
+      if (sessionError) {
+        return { success: false, error: sessionError };
       }
 
       try {
@@ -152,6 +203,7 @@ export const useTransfer = () => {
         logger.info('useTransfer', 'Starting USDC transfer', {
           recipient: recipientAddress.substring(0, 10),
           amount,
+          senderAddress: smartWalletPubkey.toString().substring(0, 10),
         });
 
         // Validate inputs
@@ -161,11 +213,28 @@ export const useTransfer = () => {
           return { success: false, error: recipientValidationError };
         }
 
+        // Validate amount
+        if (amount <= 0) {
+          const error = 'Amount must be greater than 0';
+          setTransferError(error);
+          return { success: false, error };
+        }
+
         const recipientPubkey = new PublicKey(recipientAddress);
 
         // Get associated token accounts
+        logger.debug('useTransfer', 'Getting associated token accounts', {
+          senderAddress: smartWalletPubkey.toString().substring(0, 10),
+          recipientAddress: recipientPubkey.toString().substring(0, 10),
+        });
+
         const senderUsdcAta = await getAssociatedTokenAddress(getUsdcMint(), smartWalletPubkey);
         const recipientUsdcAta = await getAssociatedTokenAddress(getUsdcMint(), recipientPubkey);
+
+        logger.debug('useTransfer', 'Associated token accounts retrieved', {
+          senderAta: senderUsdcAta.toString().substring(0, 10),
+          recipientAta: recipientUsdcAta.toString().substring(0, 10),
+        });
 
         // Create USDC transfer instruction
         const amountInUsdc = BigInt(tokenToUsdc(amount));
@@ -176,7 +245,13 @@ export const useTransfer = () => {
           amountInUsdc
         );
 
+        logger.debug('useTransfer', 'USDC transfer instruction created', {
+          amount: amount.toString(),
+          instruction: instruction.programId.toString().substring(0, 10),
+        });
+
         // Sign and send via Lazorkit (gasless, paid in USDC)
+        logger.info('useTransfer', 'Sending USDC transaction to Lazorkit portal...');
         const signature = await signAndSendTransaction({
           instructions: [instruction],
           transactionOptions: {
@@ -209,13 +284,24 @@ export const useTransfer = () => {
           'USDC transfer failed. Please try again.'
         );
         setTransferError(errorMessage);
-        logger.error('useTransfer', 'USDC transfer failed', error as Error);
+        
+        // Detailed logging for signing failures
+        const err = error as Error;
+        if (err.message?.includes('sign') || err.message?.toLowerCase().includes('signing')) {
+          logger.error('useTransfer', 'USDC transfer signing failed', err, {
+            type: 'SIGNING_FAILURE',
+            tokenType: 'USDC',
+          });
+        } else {
+          logger.error('useTransfer', 'USDC transfer failed', err);
+        }
+        
         return { success: false, error: errorMessage };
       } finally {
         setIsProcessing(false);
       }
     },
-    [smartWalletPubkey, signAndSendTransaction, validateRecipient, addTransaction]
+    [smartWalletPubkey, signAndSendTransaction, validateRecipient, validateWalletSession, addTransaction]
   );
 
   /**

@@ -134,53 +134,57 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
     try {
       setIsLoadingTransactions(true);
 
-      logger.debug('WalletContext', 'Fetching transaction signatures', {
+      logger.info('WalletContext', 'Starting transaction history refresh', {
         address: address.toString().substring(0, 10),
       });
 
       const signatures = await getRecentTransactions(address, MAX_TRANSACTION_HISTORY);
 
-      logger.debug('WalletContext', 'Fetched transaction signatures', {
+      logger.info('WalletContext', 'Fetched transaction signatures', {
         count: signatures.length,
         address: address.toString().substring(0, 10),
       });
 
       if (signatures.length === 0) {
-        logger.debug('WalletContext', 'No transactions found for address');
+        logger.info('WalletContext', 'No transactions found for address - setting empty list');
         setTransactions([]);
-        setIsLoadingTransactions(false);
         return;
       }
 
-      // Fetch details for each transaction (with better error handling)
-      const txDetails = await Promise.allSettled(
-        signatures.map(async (sig) => {
-          try {
-            const details = await getTransactionDetails(sig);
+      // Fetch details for each transaction sequentially to avoid RPC rate limiting
+      logger.info('WalletContext', 'Fetching transaction details sequentially', { count: signatures.length });
+      
+      const txDetailsArray: any[] = [];
+      
+      for (let i = 0; i < signatures.length; i++) {
+        const sig = signatures[i];
+        try {
+          const details = await getTransactionDetails(sig);
+          
+          if (details) {
+            const { amount, recipientAddress, type } = parseTransactionDetails(details, address);
             
-            if (details) {
-              const { amount, recipientAddress, type } = parseTransactionDetails(details, address);
-              
-              const tx = {
-                signature: sig,
-                timestamp: new Date((details.blockTime || 0) * 1000),
-                type: type as 'transfer' | 'other',
-                tokenType: 'SOL' as const,
-                amount: amount,
-                recipientAddress: recipientAddress,
-                status: TransactionStatus.CONFIRMED,
-                description: amount > 0 ? `${(amount / 1_000_000_000).toFixed(2)} SOL transfer` : 'Transaction',
-              };
+            const tx = {
+              signature: sig,
+              timestamp: new Date((details.blockTime || 0) * 1000),
+              type: type as 'transfer' | 'other',
+              tokenType: 'SOL' as const,
+              amount: amount,
+              recipientAddress: recipientAddress,
+              status: TransactionStatus.CONFIRMED,
+              description: amount > 0 ? `${(amount / 1_000_000_000).toFixed(2)} SOL transfer` : 'Transaction',
+            };
 
-              logger.debug('WalletContext', 'Parsed transaction', {
-                signature: sig.substring(0, 10),
-                amount: (amount / 1_000_000_000).toFixed(4),
-              });
+            logger.debug('WalletContext', 'Successfully parsed transaction', {
+              signature: sig.substring(0, 10),
+              amount: (amount / 1_000_000_000).toFixed(4),
+            });
 
-              return tx;
-            }
-            
-            return {
+            txDetailsArray.push(tx);
+          } else {
+            // Transaction details null - add as pending
+            logger.warn('WalletContext', 'Transaction details null', { signature: sig.substring(0, 10) });
+            txDetailsArray.push({
               signature: sig,
               timestamp: new Date(),
               type: 'other' as const,
@@ -189,36 +193,38 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
               recipientAddress: '',
               status: TransactionStatus.PENDING,
               description: 'Pending transaction',
-            };
-          } catch (error) {
-            logger.debug('WalletContext', `Error parsing transaction ${sig}`, error as Error);
-            return {
-              signature: sig,
-              timestamp: new Date(),
-              type: 'other' as const,
-              tokenType: 'SOL' as const,
-              amount: 0,
-              recipientAddress: '',
-              status: TransactionStatus.PENDING,
-              description: 'Pending transaction',
-            };
+            });
           }
-        })
-      );
+        } catch (error) {
+          logger.error('WalletContext', `Error processing transaction ${sig}`, error as Error);
+          txDetailsArray.push({
+            signature: sig,
+            timestamp: new Date(),
+            type: 'other' as const,
+            tokenType: 'SOL' as const,
+            amount: 0,
+            recipientAddress: '',
+            status: TransactionStatus.PENDING,
+            description: 'Pending transaction',
+          });
+        }
+        
+        // Add small delay between requests to avoid rate limiting
+        if (i < signatures.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
 
-      // Extract successful results from allSettled
-      const txDetailsResolved = txDetails
-        .filter((result) => result.status === 'fulfilled')
-        .map((result) => (result as PromiseFulfilledResult<any>).value)
-        .filter((tx) => tx !== null);
+      // Filter out any null results
+      const txDetailsResolved = txDetailsArray.filter((tx) => tx !== null);
 
-      logger.debug('WalletContext', 'Setting transactions', {
+      logger.info('WalletContext', 'Transaction details fetch complete', {
         count: txDetailsResolved.length,
       });
 
       setTransactions(txDetailsResolved);
 
-      logger.info('WalletContext', 'Transaction history refreshed', {
+      logger.info('WalletContext', 'Transaction history refresh complete', {
         count: txDetailsResolved.length,
         address: address.toString().substring(0, 10),
       });

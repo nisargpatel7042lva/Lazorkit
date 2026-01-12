@@ -222,6 +222,10 @@ export const getTransactionDetails = async (signature: string) => {
   try {
     const connection = getSolanaConnection();
 
+    logger.debug('getTransactionDetails', 'Fetching transaction', {
+      signature: signature.substring(0, 10),
+    });
+
     // Wait for transaction to be confirmed
     const latestBlockHash = await connection.getLatestBlockhash('confirmed');
     
@@ -239,6 +243,11 @@ export const getTransactionDetails = async (signature: string) => {
       // On devnet, transactions can expire quickly
       const errorMessage = confirmError instanceof Error ? confirmError.message : String(confirmError);
       
+      logger.debug('getTransactionDetails', 'Confirmation check result', {
+        signature: signature.substring(0, 10),
+        errorMessage,
+      });
+
       if (errorMessage.includes('block height exceeded')) {
         logger.debug(
           'getTransactionDetails',
@@ -248,7 +257,8 @@ export const getTransactionDetails = async (signature: string) => {
         // Try alternative confirmation check using getSignatureStatus
         const statuses = await connection.getSignatureStatuses([signature]);
         if (!statuses.value[0] || statuses.value[0].confirmations === 0) {
-          throw new Error('Transaction failed: unconfirmed after block expiration');
+          logger.warn('getTransactionDetails', 'Transaction unconfirmed', { signature: signature.substring(0, 10) });
+          return null;
         }
         // If confirmed in alternative check, continue to get details
       } else {
@@ -261,9 +271,15 @@ export const getTransactionDetails = async (signature: string) => {
       maxSupportedTransactionVersion: 0,
     });
 
+    if (!transaction) {
+      logger.warn('getTransactionDetails', 'Transaction not found', { signature: signature.substring(0, 10) });
+      return null;
+    }
+
+    logger.debug('getTransactionDetails', 'Fetched transaction successfully', { signature: signature.substring(0, 10) });
     return transaction;
   } catch (error) {
-    logError('getTransactionDetails', error as Error);
+    logger.error('getTransactionDetails', 'Failed to fetch transaction', error as Error, { signature: signature.substring(0, 10) });
     return null;
   }
 };
@@ -343,13 +359,23 @@ export const getRecentTransactions = async (
     const connection = getSolanaConnection();
     const publicKey = typeof address === 'string' ? new PublicKey(address) : address;
 
+    logger.debug('getRecentTransactions', 'Fetching signatures for address', {
+      address: publicKey.toBase58().substring(0, 10),
+      limit,
+    });
+
     const signatures = await connection.getSignaturesForAddress(publicKey, {
       limit: Math.min(limit, 100), // Max 100
     });
 
+    logger.debug('getRecentTransactions', 'Fetched signatures', {
+      count: signatures.length,
+      address: publicKey.toBase58().substring(0, 10),
+    });
+
     return signatures.map((sig) => sig.signature);
   } catch (error) {
-    logError('getRecentTransactions', error as Error);
+    logger.error('getRecentTransactions', 'Failed to fetch transaction signatures', error as Error);
     return [];
   }
 };

@@ -73,25 +73,46 @@ export const mapErrorToMessage = (
     }
   }
 
-  // Check for common error patterns
-  if (message.includes('passkeyMismatch') || message.includes('WalletWindowClosedError')) {
-    return ERROR_MESSAGES['passkey_mismatch'];
+  // Check for DialogManager/Portal errors (Lazorkit SDK)
+  if (message.includes('DialogManager') || message.includes('portal')) {
+    // Portal communication failed - usually a signing/auth issue
+    if (message.includes('sign') || message.toLowerCase().includes('signing')) {
+      return ERROR_MESSAGES['signing_failed'] || 'Failed to sign transaction. Please try again.';
+    }
+    // Generic portal error
+    return 'Failed to communicate with the authentication portal. Please try again or reconnect your wallet.';
+  }
+
+  // Check for signing failures
+  if (message.includes('sign') || message.toLowerCase().includes('signing') || 
+      message.includes('SigningError') || message.includes('passkey')) {
+    return ERROR_MESSAGES['signing_failed'] || 'Failed to sign transaction. Please try again.';
+  }
+
+  // Check for passkey issues
+  if (message.includes('passkeyMismatch') || message.includes('WalletWindowClosedError') ||
+      message.includes('credential') || message.includes('WebAuthn')) {
+    return ERROR_MESSAGES['passkey_mismatch'] || 'Passkey verification failed. Please authenticate again.';
   }
 
   if (message.includes('insufficientBalance') || message.includes('Insufficient funds')) {
-    return ERROR_MESSAGES['insufficient_balance'];
+    return ERROR_MESSAGES['insufficient_balance'] || 'Insufficient balance to complete this transaction.';
   }
 
   if (message.includes('NetworkError') || message.includes('fetch')) {
-    return ERROR_MESSAGES['network_error'];
+    return ERROR_MESSAGES['network_error'] || 'Network error. Please check your connection and try again.';
   }
 
   if (message.includes('RpcError') || message.includes('rpc')) {
-    return ERROR_MESSAGES['rpc_error'];
+    return ERROR_MESSAGES['rpc_error'] || 'RPC error. Please try again or switch to a different RPC endpoint.';
   }
 
   if (message.includes('InvalidPublicKey') || message.includes('PublicKeyError')) {
-    return ERROR_MESSAGES['invalid_recipient'];
+    return ERROR_MESSAGES['invalid_recipient'] || 'Invalid recipient address. Please check and try again.';
+  }
+
+  if (message.includes('timeout') || message.includes('Timeout')) {
+    return ERROR_MESSAGES['transaction_timeout'] || 'Transaction confirmation timed out. Please check Solscan for status.';
   }
 
   // Return provided default or generic message
