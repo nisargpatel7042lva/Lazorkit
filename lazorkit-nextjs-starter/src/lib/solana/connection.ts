@@ -66,7 +66,22 @@ export const getUsdcBalance = async (
     const publicKey = typeof address === 'string' ? new PublicKey(address) : address;
 
     // Get the associated token account for USDC
-    const ataAddress = await getAssociatedTokenAddress(getUsdcMint(), publicKey);
+    let ataAddress: PublicKey;
+    try {
+      ataAddress = await getAssociatedTokenAddress(getUsdcMint(), publicKey);
+    } catch (error) {
+      // Handle TokenOwnerOffCurveError or invalid mint issues
+      const errorMsg = (error as any)?.message || '';
+      if (
+        errorMsg.includes('TokenOwnerOffCurve') ||
+        errorMsg.includes('Invalid public key') ||
+        errorMsg.includes('USDC')
+      ) {
+        console.warn('USDC balance fetch failed (invalid token configuration):', errorMsg);
+        return 0;
+      }
+      throw error;
+    }
 
     try {
       const tokenAccount = await connection.getParsedAccountInfo(ataAddress);
@@ -106,10 +121,21 @@ export const getUsdcBalance = async (
  */
 export const getWalletBalances = async (address: string | PublicKey) => {
   try {
-    const [solBalance, usdcBalance] = await Promise.all([
-      getSolBalance(address),
-      getUsdcBalance(address),
-    ]);
+    // Fetch SOL balance first
+    const solBalance = await getSolBalance(address);
+    
+    // Add a small delay between RPC calls to reduce rate limiting
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Try to fetch USDC balance, but don't fail the whole operation if it fails
+    let usdcBalance = 0;
+    try {
+      usdcBalance = await getUsdcBalance(address);
+    } catch (error) {
+      // If USDC fetch fails, just use 0 - don't crash the whole balance fetch
+      logger.warn('getWalletBalances', 'USDC fetch failed, using 0 balance', error as Error);
+      usdcBalance = 0;
+    }
 
     return {
       solBalance,

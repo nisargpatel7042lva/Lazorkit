@@ -63,7 +63,7 @@ NEXT_PUBLIC_LAZORKIT_PORTAL_URL=https://portal.lazor.sh
 NEXT_PUBLIC_LAZORKIT_PAYMASTER_URL=https://kora.devnet.lazorkit.com
 
 # USDC Mint address on Devnet (pre-configured)
-NEXT_PUBLIC_USDC_MINT_ADDRESS=EPjFWaLb3odccccccccccccccccccccccccPEKjq
+NEXT_PUBLIC_USDC_MINT_ADDRESS=FSxJ85FXVsXSr51SeWf9ciJWTcRnqKFSmBgRDeL3KyWw
 ```
 
 No changes needed - these defaults work perfectly for testing!

@@ -23,26 +23,34 @@ export default function DashboardPage() {
 
   /**
    * Load transaction history and balances on mount and when address changes
+   * Use 2-minute interval to avoid RPC rate limiting (429 errors)
+   * User can also manually refresh via dashboard buttons
+   * 
+   * NOTE: Only depend on address, not refreshBalances/refreshTransactionHistory
+   * to avoid excessive re-renders and re-triggering the interval
    */
   useEffect(() => {
-    if (address) {
-      // Initial load
-      refreshBalances();
-      refreshTransactionHistory(address);
+    if (!address) return;
 
-      // Set up interval to refresh both balances and transaction history every 10 seconds
-      const interval = setInterval(async () => {
-        try {
-          await refreshBalances();
-          await refreshTransactionHistory(address);
-        } catch (err) {
-          console.error('Auto-refresh error:', err);
-        }
-      }, 10000);
+    // Initial load
+    refreshBalances();
+    refreshTransactionHistory(address);
 
-      return () => clearInterval(interval);
-    }
-  }, [address, refreshBalances, refreshTransactionHistory]);
+    // Set up interval to refresh both balances and transaction history every 2 minutes
+    // (Reduced polling frequency to avoid 429 rate limit errors)
+    // User can manually refresh via dashboard button for immediate updates
+    const interval = setInterval(async () => {
+      try {
+        await refreshBalances();
+        await refreshTransactionHistory(address);
+      } catch (err) {
+        console.error('Auto-refresh error:', err);
+      }
+    }, 120000); // 2 minutes
+
+    return () => clearInterval(interval);
+    // ONLY depend on address - functions are stable from context
+  }, [address]);
 
   /**
    * Handle successful transfer

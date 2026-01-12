@@ -50,25 +50,19 @@ export const useWallet = () => {
   }, [wallet?.smartWallet]);
 
   /**
-   * Refresh balances when wallet connects
+   * Refresh balances once when wallet connects
+   * DO NOT auto-poll to avoid RPC rate limiting
+   * NOTE: Only depend on isConnected to avoid excessive re-renders
    */
   useEffect(() => {
     if (isConnected && walletAddress) {
-      // Initial refresh
+      // Initial refresh only - no interval polling
       refreshBalances(walletAddress).catch((error) => {
         logger.error('useWallet', 'Initial balance refresh failed', error as Error);
       });
-
-      // Also refresh on an interval
-      const interval = setInterval(() => {
-        refreshBalances(walletAddress).catch((error) => {
-          logger.error('useWallet', 'Periodic balance refresh failed', error as Error);
-        });
-      }, 5000);
-
-      return () => clearInterval(interval);
     }
-  }, [isConnected, walletAddress, refreshBalances]);
+    // Only depend on isConnected and walletAddress - refreshBalances is stable
+  }, [isConnected, walletAddress]);
 
   /**
    * Get balance in display units (SOL, USDC)

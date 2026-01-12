@@ -78,7 +78,7 @@ export const SOL_DECIMALS = 9;
 /**
  * UI/UX Constants
  */
-export const BALANCE_REFRESH_INTERVAL = 5000; // Poll balances every 5 seconds
+export const BALANCE_REFRESH_INTERVAL = 15000; // Poll balances every 15 seconds (reduced from 5s to avoid RPC rate limiting)
 export const MAX_TRANSACTION_HISTORY = 10; // Show last 10 transactions
 export const SESSION_STORAGE_KEY = 'lazorkit_wallet_session';
 export const CREDENTIALS_STORAGE_KEY = 'lazorkit_credentials';
