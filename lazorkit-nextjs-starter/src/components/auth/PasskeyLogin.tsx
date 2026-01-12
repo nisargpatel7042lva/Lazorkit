@@ -38,22 +38,41 @@ export const PasskeyLogin = ({
 
   /**
    * Auto-attempt connection on mount if specified
+   * Uses setTimeout to defer execution until after user interaction is allowed
    */
   React.useEffect(() => {
     if (autoConnect && !hasAttemptedAuto && isSupported && !isCheckingSupport) {
-      setHasAttemptedAuto(true);
-      handleAutoConnect();
+      // Defer auto-connect to avoid popup blocking
+      // This gives the browser a chance to recognize user interaction context
+      const timeoutId = setTimeout(() => {
+        setHasAttemptedAuto(true);
+        handleAutoConnect().catch((err) => {
+          logger.error('PasskeyLogin', 'Auto-connect failed', err as Error);
+          // Silently fail - user can manually click login if needed
+        });
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [autoConnect, hasAttemptedAuto, isSupported, isCheckingSupport]);
 
   /**
    * Handle auto-connection attempt
+   * Silently fails if no existing session (normal case)
    */
   const handleAutoConnect = async () => {
     logger.info('PasskeyLogin', 'Attempting auto-reconnect...');
-    const result = await reconnect();
-    if (result) {
-      onSuccess?.();
+    try {
+      const result = await reconnect();
+      if (result) {
+        logger.info('PasskeyLogin', 'Auto-reconnect successful');
+        onSuccess?.();
+      } else {
+        logger.debug('PasskeyLogin', 'No existing session to reconnect to');
+      }
+    } catch (err) {
+      logger.debug('PasskeyLogin', 'Auto-reconnect failed (normal if first time user)', err);
+      // Don't show error to user - this is expected if no session exists
     }
   };
 

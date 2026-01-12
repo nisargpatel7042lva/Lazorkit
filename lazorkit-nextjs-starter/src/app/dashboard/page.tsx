@@ -17,31 +17,59 @@ import { TransactionHistory } from '@/components/transfer/TransactionHistory';
 import { useToast } from '@/components/ui/Toast';
 
 export default function DashboardPage() {
-  const { address } = useWallet();
+  const { address, refreshBalances } = useWallet();
   const { refreshTransactionHistory } = useWalletContext();
-  const { success } = useToast();
+  const { success, error: showError } = useToast();
 
   /**
-   * Load transaction history on mount
+   * Load transaction history and balances on mount and when address changes
    */
   useEffect(() => {
     if (address) {
+      // Initial load
+      refreshBalances();
       refreshTransactionHistory(address);
+
+      // Set up interval to refresh both balances and transaction history every 10 seconds
+      const interval = setInterval(async () => {
+        try {
+          await refreshBalances();
+          await refreshTransactionHistory(address);
+        } catch (err) {
+          console.error('Auto-refresh error:', err);
+        }
+      }, 10000);
+
+      return () => clearInterval(interval);
     }
-  }, [address, refreshTransactionHistory]);
+  }, [address, refreshBalances, refreshTransactionHistory]);
 
   /**
    * Handle successful transfer
    */
-  const handleTransferComplete = (signature: string) => {
+  const handleTransferComplete = async (signature: string) => {
     success(
       'Transfer initiated',
       `Transaction: ${signature.substring(0, 10)}...`
     );
 
-    // Refresh transaction history
+    // Refresh balances and transaction history immediately after transfer
     if (address) {
-      refreshTransactionHistory(address);
+      try {
+        // Wait a moment for transaction to be indexed
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        
+        // Refresh both
+        await Promise.all([
+          refreshBalances(),
+          refreshTransactionHistory(address),
+        ]);
+
+        success('Balances updated');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to refresh data';
+        showError(errorMessage);
+      }
     }
   };
 

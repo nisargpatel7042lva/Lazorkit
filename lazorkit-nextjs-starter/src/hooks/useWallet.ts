@@ -54,11 +54,16 @@ export const useWallet = () => {
    */
   useEffect(() => {
     if (isConnected && walletAddress) {
-      refreshBalances(walletAddress);
+      // Initial refresh
+      refreshBalances(walletAddress).catch((error) => {
+        logger.error('useWallet', 'Initial balance refresh failed', error as Error);
+      });
 
       // Also refresh on an interval
       const interval = setInterval(() => {
-        refreshBalances(walletAddress);
+        refreshBalances(walletAddress).catch((error) => {
+          logger.error('useWallet', 'Periodic balance refresh failed', error as Error);
+        });
       }, 5000);
 
       return () => clearInterval(interval);

@@ -36,10 +36,36 @@ export const LAZORKIT_PAYMASTER_URL =
  * Store as string to avoid module initialization errors during SSR
  */
 export const USDC_MINT_ADDRESS = 
-  process.env.NEXT_PUBLIC_USDC_MINT_ADDRESS || 'EPjFWaLb3odccccccccccccccccccccccccPEKjq';
+  process.env.NEXT_PUBLIC_USDC_MINT_ADDRESS || 'EPjFWaLb3oda64sMtS1wixpg5B7z5SAnqDFW4Ady';
+
+// Cache for USDC_MINT to avoid re-creating on every call
+let cachedUsdcMint: PublicKey | null = null;
 
 // Lazy getter for USDC_MINT PublicKey to avoid SSR issues
-export const getUsdcMint = (): PublicKey => new PublicKey(USDC_MINT_ADDRESS);
+export const getUsdcMint = (): PublicKey => {
+  // Validate address before creating PublicKey
+  if (!USDC_MINT_ADDRESS || USDC_MINT_ADDRESS.length === 0) {
+    throw new Error(
+      'USDC_MINT_ADDRESS is not configured. Please set NEXT_PUBLIC_USDC_MINT_ADDRESS environment variable.'
+    );
+  }
+
+  // Return cached value if available
+  if (cachedUsdcMint) {
+    return cachedUsdcMint;
+  }
+
+  try {
+    cachedUsdcMint = new PublicKey(USDC_MINT_ADDRESS);
+    return cachedUsdcMint;
+  } catch (error) {
+    throw new Error(
+      `Invalid USDC_MINT_ADDRESS: "${USDC_MINT_ADDRESS}". ` +
+      `Must be a valid Solana public key (base58 encoded). ` +
+      `Current value may be from default fallback.`
+    );
+  }
+};
 
 /**
  * Token Decimals

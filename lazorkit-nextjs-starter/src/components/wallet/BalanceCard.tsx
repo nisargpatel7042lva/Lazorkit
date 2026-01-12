@@ -7,22 +7,38 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/LoadingSpinner';
 import { RefreshCw } from 'lucide-react';
 import { lamportsToSol, usdcToToken } from '@/lib/utils/formatting';
+import { useToast } from '@/components/ui/Toast';
 
 /**
  * Component displaying wallet balances
  */
 export const BalanceCard = () => {
   const { solBalance, usdcBalance, isLoading, refreshBalances } = useWallet();
+  const { success, error: showError } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const displaySol = lamportsToSol(solBalance).toFixed(4);
   const displayUsdc = usdcToToken(usdcBalance).toFixed(2);
+
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await refreshBalances();
+      success('Balances updated successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to refresh balances';
+      showError(errorMessage);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <Card>
@@ -31,11 +47,11 @@ export const BalanceCard = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={refreshBalances}
-          disabled={isLoading}
+          onClick={handleRefresh}
+          disabled={isLoading || isRefreshing}
           className="gap-2"
         >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${isLoading || isRefreshing ? 'animate-spin' : ''}`} />
           <span className="sr-only">Refresh balances</span>
         </Button>
       </CardHeader>

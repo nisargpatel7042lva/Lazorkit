@@ -14,6 +14,7 @@ import {
 import { getAssociatedTokenAddress } from '@solana/spl-token';
 import { SOLANA_RPC_URL, getUsdcMint } from '../lazorkit/constants';
 import { logError } from '../utils/errors';
+import { logger } from '../utils/logger';
 
 /**
  * Singleton Solana RPC connection
@@ -122,6 +123,70 @@ export const getWalletBalances = async (address: string | PublicKey) => {
 };
 
 /**
+ * Parses transaction details to extract transfer information
+ * @param transaction - Raw transaction from Solana
+ * @param userAddress - Wallet address to check transfers for
+ * @returns Parsed transaction details with amount and recipient
+ */
+export const parseTransactionDetails = (transaction: any, userAddress: string | PublicKey) => {
+  const userAddr = typeof userAddress === 'string' ? userAddress : userAddress.toBase58();
+  
+  let totalAmount = 0;
+  let recipientAddress = '';
+  let transactionType = 'other';
+  
+  try {
+    if (!transaction || !transaction.transaction) {
+      return { amount: 0, recipientAddress: '', type: 'other' };
+    }
+
+    const instructions = transaction.transaction.message.instructions;
+    
+    // Parse instructions to find transfer amount
+    for (const instruction of instructions) {
+      // Check for system program transfers
+      if (instruction.program === 'system') {
+        if (instruction.parsed?.type === 'transfer') {
+          const { source, destination, lamports } = instruction.parsed.info;
+          
+          // If this wallet is the source, it's sending
+          if (source === userAddr) {
+            totalAmount = lamports;
+            recipientAddress = destination;
+            transactionType = 'transfer';
+            break;
+          }
+          // If this wallet is the destination, it's receiving
+          else if (destination === userAddr) {
+            totalAmount = lamports;
+            recipientAddress = source;
+            transactionType = 'transfer';
+            break;
+          }
+        }
+      }
+      
+      // Check for token transfers (SPL)
+      if (instruction.program === 'spl-token') {
+        if (instruction.parsed?.type === 'transfer' || instruction.parsed?.type === 'transferChecked') {
+          const info = instruction.parsed.info;
+          const amount = info.tokenAmount?.amount || info.amount || 0;
+          recipientAddress = info.destination || '';
+          totalAmount = typeof amount === 'string' ? parseInt(amount, 10) : amount;
+          transactionType = 'transfer';
+          break;
+        }
+      }
+    }
+    
+    return { amount: totalAmount, recipientAddress, type: transactionType };
+  } catch (error) {
+    logger.debug('parseTransactionDetails', 'Error parsing transaction', error as Error);
+    return { amount: 0, recipientAddress: '', type: 'other' };
+  }
+};
+
+/**
  * Fetches transaction details from Solana blockchain
  * Returns null if transaction not found or not finalized
  * @param signature - Transaction signature
@@ -133,14 +198,37 @@ export const getTransactionDetails = async (signature: string) => {
 
     // Wait for transaction to be confirmed
     const latestBlockHash = await connection.getLatestBlockhash('confirmed');
-    await connection.confirmTransaction(
-      {
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: signature,
-      },
-      'confirmed'
-    );
+    
+    try {
+      await connection.confirmTransaction(
+        {
+          blockhash: latestBlockHash.blockhash,
+          lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+          signature: signature,
+        },
+        'confirmed'
+      );
+    } catch (confirmError) {
+      // Handle block height exceeded or other confirmation errors
+      // On devnet, transactions can expire quickly
+      const errorMessage = confirmError instanceof Error ? confirmError.message : String(confirmError);
+      
+      if (errorMessage.includes('block height exceeded')) {
+        logger.debug(
+          'getTransactionDetails',
+          'Transaction block height exceeded - checking alternative confirmation method'
+        );
+        
+        // Try alternative confirmation check using getSignatureStatus
+        const statuses = await connection.getSignatureStatuses([signature]);
+        if (!statuses.value[0] || statuses.value[0].confirmations === 0) {
+          throw new Error('Transaction failed: unconfirmed after block expiration');
+        }
+        // If confirmed in alternative check, continue to get details
+      } else {
+        throw confirmError;
+      }
+    }
 
     // Get transaction details
     const transaction = await connection.getTransaction(signature, {

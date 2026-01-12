@@ -20,6 +20,15 @@ import { ExternalLink, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 export const TransactionHistory = () => {
   const { transactions, isLoadingTransactions } = useWalletContext();
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('TransactionHistory render:', {
+      isLoadingTransactions,
+      transactionCount: transactions.length,
+      transactions: transactions.slice(0, 2), // Show first 2 for debugging
+    });
+  }, [transactions, isLoadingTransactions]);
+
   if (isLoadingTransactions) {
     return (
       <Card>
@@ -35,7 +44,7 @@ export const TransactionHistory = () => {
     );
   }
 
-  if (transactions.length === 0) {
+  if (!transactions || transactions.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -53,7 +62,7 @@ export const TransactionHistory = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Transactions</CardTitle>
+        <CardTitle>Recent Transactions ({transactions.length})</CardTitle>
       </CardHeader>
 
       <CardContent>
@@ -85,7 +94,7 @@ export const TransactionHistory = () => {
 
                 <div className="text-right flex-shrink-0">
                   <p className="font-semibold text-slate-900">
-                    {tx.amount > 0 ? '+' : ''}{tx.amount / Math.pow(10, 6)}{' '}
+                    {tx.amount > 0 ? '+' : ''}{(tx.amount / Math.pow(10, tx.tokenType === 'USDC' ? 6 : 9)).toFixed(tx.tokenType === 'USDC' ? 2 : 4)}{' '}
                     {tx.tokenType}
                   </p>
                   <p className="text-xs text-slate-500 font-mono">
