@@ -95,16 +95,18 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
 
   return (
     <>
-      <Card>
+      <Card className="hover:shadow-lg transition-shadow">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Send className="h-5 w-5" />
-            Send Funds
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="w-8 h-8 bg-[#1e293b] rounded-lg flex items-center justify-center">
+              <Send className="h-4 w-4 text-white" />
+            </div>
+            <span>Send Funds</span>
           </CardTitle>
         </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="pt-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Token Type Selection */}
             <div>
               <label className="block text-sm font-medium text-slate-900 mb-2">
@@ -116,10 +118,10 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
                     key={token}
                     type="button"
                     onClick={() => setTokenType(token as 'SOL' | 'USDC')}
-                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors border ${
                       tokenType === token
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                        ? 'bg-[#1e293b] text-white border-[#1e293b]'
+                        : 'bg-[#faf9f6] text-[#1a1a1a] hover:bg-[#f5f5f0] border-[#1a1a1a]'
                     }`}
                   >
                     {token}
@@ -168,8 +170,8 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
               {isProcessing ? 'Processing...' : 'Review & Send'}
             </Button>
 
-            <p className="text-xs text-slate-500 text-center">
-              No SOL needed for gas - powered by Lazorkit paymaster
+            <p className="text-xs text-[#1e293b] opacity-60 text-center">
+              No SOL needed for gas - powered by our paymaster
             </p>
           </form>
         </CardContent>
@@ -196,30 +198,30 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
         }
       >
         <div className="space-y-4">
-          <div className="bg-slate-50 rounded-lg p-4 space-y-3">
+          <div className="bg-[#faf9f6] border border-[#1a1a1a] rounded-lg p-4 space-y-3">
             <div className="flex justify-between">
-              <span className="text-slate-600">Token:</span>
-              <span className="font-semibold text-slate-900">{tokenType}</span>
+              <span className="text-[#1e293b] opacity-70">Token:</span>
+              <span className="font-semibold text-[#1a1a1a]">{tokenType}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-600">Amount:</span>
-              <span className="font-semibold text-slate-900">
+              <span className="text-[#1e293b] opacity-70">Amount:</span>
+              <span className="font-semibold text-[#1a1a1a]">
                 {amount} {tokenType}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-600">To:</span>
-              <span className="font-mono text-sm text-slate-900 break-all">
+              <span className="text-[#1e293b] opacity-70">To:</span>
+              <span className="font-mono text-sm text-[#1a1a1a] break-all">
                 {recipientAddress.substring(0, 10)}...
               </span>
             </div>
-            <div className="border-t border-slate-200 pt-3 flex justify-between">
-              <span className="text-slate-600">Gas Fee:</span>
-              <span className="font-semibold text-green-600">Free (Paymaster)</span>
+            <div className="border-t border-[#1a1a1a] pt-3 flex justify-between">
+              <span className="text-[#1e293b] opacity-70">Gas Fee:</span>
+              <span className="font-semibold text-[#8b5cf6]">Free (Paymaster)</span>
             </div>
           </div>
 
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-[#1e293b] opacity-70">
             This transaction will be signed with your passkey and submitted gaslessly.
           </p>
         </div>

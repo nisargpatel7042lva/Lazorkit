@@ -11,6 +11,7 @@ import { useLazorkit } from '@/hooks/useLazorkit';
 import { PasskeyLogin } from '@/components/auth/PasskeyLogin';
 import { PasskeyRegister } from '@/components/auth/PasskeyRegister';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function Home() {
   const { isConnected } = useLazorkit();
@@ -34,28 +35,37 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+    <div className="min-h-screen bg-[#faf9f6] flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 shadow-sm">
+      <div className="bg-white border-b border-[#1a1a1a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-slate-900">
-            ⚡ Lazorkit Starter Kit
-          </h1>
-          <p className="text-slate-600 mt-2">
-            Passkey-based Solana wallet with gasless transactions
-          </p>
+          <div className="flex items-center gap-3">
+            <div className="relative w-8 h-8 flex items-center justify-center">
+              <Image
+                src="/image.png"
+                alt="SolPass Logo"
+                width={32}
+                height={32}
+                className="object-contain"
+                priority
+              />
+            </div>
+            <h1 className="text-2xl font-bold text-[#1a1a1a]">
+              SolPass
+            </h1>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="max-w-2xl w-full">
+      <div className="flex-1 flex items-center justify-center px-4 py-20">
+        <div className="max-w-md w-full">
           {/* Hero Section */}
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">
+          <div className="mb-10">
+            <h2 className="text-5xl font-bold text-[#1a1a1a] mb-4 tracking-tight">
               {mode === 'login' ? 'Welcome Back' : 'Create Your Wallet'}
             </h2>
-            <p className="text-xl text-slate-600">
+            <p className="text-lg text-[#1e293b] opacity-70 leading-relaxed">
               {mode === 'login'
                 ? 'Login with your passkey to access your Solana wallet'
                 : 'Create a new passkey-based Solana wallet without seed phrases'}
@@ -80,71 +90,43 @@ export default function Home() {
           {/* Toggle Mode */}
           <div className="text-center">
             {mode === 'login' ? (
-              <p className="text-slate-600">
+              <p className="text-[#1e293b] opacity-70">
                 Don't have a wallet?{' '}
                 <button
                   onClick={() => setMode('register')}
-                  className="text-blue-600 font-semibold hover:text-blue-700"
+                  className="text-[#8b5cf6] font-semibold hover:text-[#7c3aed] transition-colors underline-offset-4 hover:underline"
                 >
                   Create one now
                 </button>
               </p>
             ) : (
-              <p className="text-slate-600">
+              <p className="text-[#1e293b] opacity-70">
                 Already have a wallet?{' '}
                 <button
                   onClick={() => setMode('login')}
-                  className="text-blue-600 font-semibold hover:text-blue-700"
+                  className="text-[#8b5cf6] font-semibold hover:text-[#7c3aed] transition-colors underline-offset-4 hover:underline"
                 >
                   Login here
                 </button>
               </p>
             )}
           </div>
-
-          {/* Features Section */}
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="text-4xl mb-4">🔐</div>
-              <h3 className="font-semibold text-slate-900 mb-2">No Seed Phrases</h3>
-              <p className="text-slate-600 text-sm">
-                Passkeys are secured by your biometric or PIN authentication
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="text-4xl mb-4">⚙️</div>
-              <h3 className="font-semibold text-slate-900 mb-2">Gasless</h3>
-              <p className="text-slate-600 text-sm">
-                No SOL needed for gas - all fees are sponsored by the paymaster
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="text-4xl mb-4">📱</div>
-              <h3 className="font-semibold text-slate-900 mb-2">Web2 UX</h3>
-              <p className="text-slate-600 text-sm">
-                Same experience as traditional apps you already know
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="border-t border-slate-200 bg-white py-6 mt-12">
+      <div className="border-t border-[#1a1a1a] bg-white py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-slate-600">
-            Built on Solana Devnet using{' '}
+          <p className="text-center text-sm text-[#1e293b] opacity-70">
+            Built on Solana Devnet • Powered by{' '}
             <a
               href="https://lazorkit.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 font-semibold"
+              className="text-[#8b5cf6] font-semibold hover:text-[#7c3aed] transition-colors"
             >
-              Lazorkit
+              Lazorkit SDK
             </a>
-            {' '}SDK
           </p>
         </div>
       </div>

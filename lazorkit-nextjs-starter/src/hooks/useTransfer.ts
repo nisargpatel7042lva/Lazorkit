@@ -141,13 +141,13 @@ export const useTransfer = () => {
 
         setTransactionSignature(signature);
 
-        // Record transaction
+        // Record transaction (negative amount for outgoing)
         const transaction: StoredTransaction = {
           signature,
           timestamp: new Date(),
           type: 'transfer',
           tokenType: 'SOL',
-          amount: solToLamports(amount),
+          amount: -solToLamports(amount), // Negative for outgoing
           recipientAddress,
           status: TransactionStatus.CONFIRMING,
           description: `Transferred ${amount} SOL to ${recipientAddress.substring(0, 10)}...`,
@@ -262,13 +262,13 @@ export const useTransfer = () => {
 
         setTransactionSignature(signature);
 
-        // Record transaction
+        // Record transaction (negative amount for outgoing)
         const transaction: StoredTransaction = {
           signature,
           timestamp: new Date(),
           type: 'transfer',
           tokenType: 'USDC',
-          amount: tokenToUsdc(amount),
+          amount: -tokenToUsdc(amount), // Negative for outgoing
           recipientAddress,
           status: TransactionStatus.CONFIRMING,
           description: `Transferred ${amount} USDC to ${recipientAddress.substring(0, 10)}...`,

@@ -47,15 +47,15 @@ export const AddressDisplay = () => {
 
   return (
     <>
-      <Card>
+      <Card className="hover:shadow-lg transition-shadow">
         <CardHeader>
-          <CardTitle>Wallet Address</CardTitle>
+          <CardTitle className="text-xl">Wallet Address</CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5 pt-6">
           {/* Address Display */}
-          <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <code className="flex-1 font-mono text-sm text-slate-700 break-all">
+          <div className="flex items-center gap-2 p-3 bg-[#faf9f6] rounded-lg border border-[#1a1a1a]">
+            <code className="flex-1 font-mono text-sm text-[#1a1a1a] break-all">
               {displayAddress}
             </code>
             <Button
@@ -84,7 +84,7 @@ export const AddressDisplay = () => {
             href={`https://solscan.io/address/${displayAddress}?cluster=devnet`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="block text-center text-sm text-[#8b5cf6] hover:text-[#7c3aed] font-medium transition-colors"
           >
             View on Solscan ↗
           </a>

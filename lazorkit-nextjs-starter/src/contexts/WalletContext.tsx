@@ -151,40 +151,61 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
         return;
       }
 
-      // Fetch details for each transaction sequentially to avoid RPC rate limiting
-      logger.info('WalletContext', 'Fetching transaction details sequentially', { count: signatures.length });
+      // Fetch details for transactions in parallel batches to improve performance
+      logger.info('WalletContext', 'Fetching transaction details in batches', { count: signatures.length });
       
       const txDetailsArray: any[] = [];
+      const BATCH_SIZE = 5; // Process 5 transactions at a time
       
-      for (let i = 0; i < signatures.length; i++) {
-        const sig = signatures[i];
-        try {
-          const details = await getTransactionDetails(sig);
-          
-          if (details) {
-            const { amount, recipientAddress, type } = parseTransactionDetails(details, address);
+      // Process transactions in batches
+      for (let i = 0; i < signatures.length; i += BATCH_SIZE) {
+        const batch = signatures.slice(i, i + BATCH_SIZE);
+        
+        // Fetch batch in parallel
+        const batchPromises = batch.map(async (sig) => {
+          try {
+            const details = await getTransactionDetails(sig);
             
-            const tx = {
-              signature: sig,
-              timestamp: new Date((details.blockTime || 0) * 1000),
-              type: type as 'transfer' | 'other',
-              tokenType: 'SOL' as const,
-              amount: amount,
-              recipientAddress: recipientAddress,
-              status: TransactionStatus.CONFIRMED,
-              description: amount > 0 ? `${(amount / 1_000_000_000).toFixed(2)} SOL transfer` : 'Transaction',
-            };
+            if (details) {
+              const { amount, recipientAddress, type, tokenType } = parseTransactionDetails(details, address);
+              
+              const tx = {
+                signature: sig,
+                timestamp: new Date((details.blockTime || 0) * 1000),
+                type: type as 'transfer' | 'other',
+                tokenType: tokenType || 'SOL',
+                amount: amount,
+                recipientAddress: recipientAddress,
+                status: TransactionStatus.CONFIRMED,
+                description: amount > 0 
+                  ? `${(amount / Math.pow(10, tokenType === 'USDC' ? 6 : 9)).toFixed(tokenType === 'USDC' ? 2 : 4)} ${tokenType} transfer`
+                  : 'Transaction',
+              };
 
-            logger.debug('WalletContext', 'Successfully parsed transaction', {
-              signature: sig.substring(0, 10),
-              amount: (amount / 1_000_000_000).toFixed(4),
-            });
+              logger.debug('WalletContext', 'Successfully parsed transaction', {
+                signature: sig.substring(0, 10),
+                amount: (amount / Math.pow(10, tokenType === 'USDC' ? 6 : 9)).toFixed(4),
+                tokenType,
+              });
 
-            txDetailsArray.push(tx);
-          } else {
-            // Transaction details null - add as pending
-            logger.warn('WalletContext', 'Transaction details null', { signature: sig.substring(0, 10) });
-            txDetailsArray.push({
+              return tx;
+            } else {
+              // Transaction details null - add as pending
+              logger.warn('WalletContext', 'Transaction details null', { signature: sig.substring(0, 10) });
+              return {
+                signature: sig,
+                timestamp: new Date(),
+                type: 'other' as const,
+                tokenType: 'SOL' as const,
+                amount: 0,
+                recipientAddress: '',
+                status: TransactionStatus.PENDING,
+                description: 'Pending transaction',
+              };
+            }
+          } catch (error) {
+            logger.error('WalletContext', `Error processing transaction ${sig}`, error as Error);
+            return {
               signature: sig,
               timestamp: new Date(),
               type: 'other' as const,
@@ -193,25 +214,16 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
               recipientAddress: '',
               status: TransactionStatus.PENDING,
               description: 'Pending transaction',
-            });
+            };
           }
-        } catch (error) {
-          logger.error('WalletContext', `Error processing transaction ${sig}`, error as Error);
-          txDetailsArray.push({
-            signature: sig,
-            timestamp: new Date(),
-            type: 'other' as const,
-            tokenType: 'SOL' as const,
-            amount: 0,
-            recipientAddress: '',
-            status: TransactionStatus.PENDING,
-            description: 'Pending transaction',
-          });
-        }
+        });
         
-        // Add small delay between requests to avoid rate limiting
-        if (i < signatures.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+        const batchResults = await Promise.all(batchPromises);
+        txDetailsArray.push(...batchResults);
+        
+        // Small delay between batches to avoid rate limiting
+        if (i + BATCH_SIZE < signatures.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
 

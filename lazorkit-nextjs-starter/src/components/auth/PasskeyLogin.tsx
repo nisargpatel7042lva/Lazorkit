@@ -99,12 +99,12 @@ export const PasskeyLogin = ({
   // Already connected
   if (isConnected) {
     return (
-      <Card className="w-full max-w-md mx-auto border-green-200">
-        <CardHeader className="border-b-green-200">
-          <CardTitle className="text-green-600">Logged In</CardTitle>
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="text-[#8b5cf6]">Logged In</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <p className="text-slate-700 mb-6">You are already connected to your wallet.</p>
+          <p className="text-[#1a1a1a] mb-6">You are already connected to your wallet.</p>
           <Button onClick={onSuccess} className="w-full">
             Continue
           </Button>
@@ -138,8 +138,8 @@ export const PasskeyLogin = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <p className="text-slate-700 mb-4">{unsupportedMessage}</p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">
+          <p className="text-[#1a1a1a] mb-4">{unsupportedMessage}</p>
+          <div className="bg-[#faf9f6] border border-[#1a1a1a] rounded-lg p-4 text-sm text-[#1a1a1a]">
             <p className="font-semibold mb-2">Please use:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>Chrome, Safari, Firefox, or Edge (latest versions)</li>
@@ -155,11 +155,11 @@ export const PasskeyLogin = ({
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Login to Your Wallet</CardTitle>
-        <CardDescription>Authenticate with your passkey to access your Solana wallet</CardDescription>
+        <CardTitle className="text-xl">Login to Your Wallet</CardTitle>
+        <CardDescription className="mt-2">Authenticate with your passkey to access your Solana wallet</CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-6">
         {/* Error message */}
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -181,8 +181,8 @@ export const PasskeyLogin = ({
         </Button>
 
         {/* Register link */}
-        <div className="text-center border-t border-slate-200 pt-6">
-          <p className="text-slate-600 mb-3">Don't have a wallet yet?</p>
+        <div className="text-center border-t border-[#1a1a1a] pt-6">
+          <p className="text-[#1e293b] opacity-70 mb-3">Don't have a wallet yet?</p>
           <Button
             variant="outline"
             onClick={onRegisterClick}
@@ -193,7 +193,7 @@ export const PasskeyLogin = ({
           </Button>
         </div>
 
-        <p className="text-xs text-slate-500 text-center">
+        <p className="text-xs text-[#1e293b] opacity-60 text-center">
           Your passkey is securely stored on this device and never leaves it
         </p>
       </CardContent>

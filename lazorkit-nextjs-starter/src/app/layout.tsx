@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lazorkit Starter Kit",
-  description: "Passkey-based Solana wallet with gasless transactions",
+  title: "SolPass - Passkey Wallet",
+  description: "Secure Solana wallet with passkey authentication and gasless transactions",
   icons: {
     icon: "/favicon.ico",
   },
@@ -32,7 +32,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#faf9f6]`}
       >
         <LazorkitContextProvider>
           <WalletContextProvider>

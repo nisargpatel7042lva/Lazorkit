@@ -15,6 +15,7 @@ import { AddressDisplay } from '@/components/wallet/AddressDisplay';
 import { TransferForm } from '@/components/transfer/TransferForm';
 import { TransactionHistory } from '@/components/transfer/TransactionHistory';
 import { useToast } from '@/components/ui/Toast';
+import { Lightbulb, Lock } from 'lucide-react';
 
 export default function DashboardPage() {
   const { address, refreshBalances } = useWallet();
@@ -82,13 +83,13 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Header */}
-      <div className="text-center space-y-2 mb-8">
-        <h1 className="text-4xl font-bold text-slate-900">
-          Welcome to Your Wallet
+      <div className="mb-10">
+        <h1 className="text-4xl font-bold text-[#1a1a1a] mb-3 tracking-tight">
+          Dashboard
         </h1>
-        <p className="text-xl text-slate-600">
+        <p className="text-lg text-[#1e293b] opacity-70">
           Manage your Solana assets with gasless transactions
         </p>
       </div>
@@ -109,22 +110,32 @@ export default function DashboardPage() {
       </div>
 
       {/* Transaction History */}
-      <div>
+      <div className="mt-10">
         <TransactionHistory />
       </div>
 
       {/* Info Boxes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-900 mb-2">💡 Gasless Transactions</h3>
-          <p className="text-sm text-blue-800">
-            All transactions on Lazorkit are gasless. The paymaster covers the SOL fees for you, so you only need tokens to transfer.
+        <div className="bg-white border border-[#1a1a1a] rounded-lg p-8 hover:shadow-lg transition-shadow">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-[#8b5cf6] rounded-lg flex items-center justify-center">
+              <Lightbulb className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="font-semibold text-[#1a1a1a] text-lg">Gasless Transactions</h3>
+          </div>
+          <p className="text-sm text-[#1e293b] opacity-70 leading-relaxed">
+            All transactions are gasless. The paymaster covers the SOL fees for you, so you only need tokens to transfer.
           </p>
         </div>
 
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <h3 className="font-semibold text-green-900 mb-2">🔐 Passkey Security</h3>
-          <p className="text-sm text-green-800">
+        <div className="bg-white border border-[#1a1a1a] rounded-lg p-8 hover:shadow-lg transition-shadow">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-[#1e293b] rounded-lg flex items-center justify-center">
+              <Lock className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="font-semibold text-[#1a1a1a] text-lg">Passkey Security</h3>
+          </div>
+          <p className="text-sm text-[#1e293b] opacity-70 leading-relaxed">
             Your passkey is secured by biometric authentication on this device and never leaves your device.
           </p>
         </div>

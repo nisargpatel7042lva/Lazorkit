@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/components/ui/Toast';
-import { AlertCircle, Check } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2 } from 'lucide-react';
 import { logger } from '@/lib/utils/logger';
 
 export interface PasskeyRegisterProps {
@@ -80,8 +80,8 @@ export const PasskeyRegister = ({ onSuccess }: PasskeyRegisterProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <p className="text-slate-700 mb-4">{unsupportedMessage}</p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">
+          <p className="text-[#1a1a1a] mb-4">{unsupportedMessage}</p>
+          <div className="bg-[#faf9f6] border border-[#1a1a1a] rounded-lg p-4 text-sm text-[#1a1a1a]">
             <p className="font-semibold mb-2">Recommended browsers:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>Chrome/Chromium (latest)</li>
@@ -98,15 +98,15 @@ export const PasskeyRegister = ({ onSuccess }: PasskeyRegisterProps) => {
   // Success state
   if (step === 'success') {
     return (
-      <Card className="w-full max-w-md mx-auto border-green-200">
-        <CardHeader className="border-b-green-200">
-          <CardTitle className="flex items-center gap-2 text-green-600">
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-[#8b5cf6]">
             <Check className="h-5 w-5" />
             Registration Successful
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <p className="text-slate-700 mb-6">
+          <p className="text-[#1a1a1a] mb-6">
             Your wallet has been created successfully! Your passkey is securely stored on this device.
           </p>
           <Button onClick={onSuccess} className="w-full">
@@ -121,27 +121,27 @@ export const PasskeyRegister = ({ onSuccess }: PasskeyRegisterProps) => {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Create Your Wallet</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-xl">Create Your Wallet</CardTitle>
+        <CardDescription className="mt-2">
           Register a passkey to create a secure, seedless Solana wallet
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-6">
         {/* Info boxes */}
-        <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm font-semibold text-blue-900">What is a passkey?</p>
-          <ul className="space-y-2 text-sm text-blue-800">
-            <li className="flex gap-2">
-              <span>✓</span>
+        <div className="space-y-3 p-4 bg-[#faf9f6] border border-[#1a1a1a] rounded-lg">
+          <p className="text-sm font-semibold text-[#1a1a1a]">What is a passkey?</p>
+          <ul className="space-y-2 text-sm text-[#1e293b] opacity-70">
+            <li className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-[#8b5cf6] flex-shrink-0" />
               <span>No seed phrase to memorize or store</span>
             </li>
-            <li className="flex gap-2">
-              <span>✓</span>
+            <li className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-[#8b5cf6] flex-shrink-0" />
               <span>Secured by your biometric or PIN</span>
             </li>
-            <li className="flex gap-2">
-              <span>✓</span>
+            <li className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-[#8b5cf6] flex-shrink-0" />
               <span>Hardware-bound and phishing-resistant</span>
             </li>
           </ul>
@@ -149,8 +149,8 @@ export const PasskeyRegister = ({ onSuccess }: PasskeyRegisterProps) => {
 
         {/* Platform authenticator check */}
         {!isPlatformAuthenticatorAvailable && (
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-900">
+          <div className="p-4 bg-[#faf9f6] border border-[#fbbf24] rounded-lg">
+            <p className="text-sm text-[#1a1a1a]">
               <span className="font-semibold">Note:</span> Platform authenticator (biometric/PIN) is not available. You may need to set up a passkey manually.
             </p>
           </div>
@@ -174,7 +174,7 @@ export const PasskeyRegister = ({ onSuccess }: PasskeyRegisterProps) => {
           {isConnecting ? 'Creating Wallet...' : 'Create Wallet with Passkey'}
         </Button>
 
-        <p className="text-xs text-slate-500 text-center">
+        <p className="text-xs text-[#1e293b] opacity-60 text-center">
           By registering, you agree to create a new Solana wallet on Devnet
         </p>
       </CardContent>
