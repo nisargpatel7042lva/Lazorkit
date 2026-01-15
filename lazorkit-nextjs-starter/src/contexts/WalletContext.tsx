@@ -169,6 +169,10 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
             if (details) {
               const { amount, recipientAddress, type, tokenType } = parseTransactionDetails(details, address);
               
+              // Calculate display amount based on decimals
+              const decimals = tokenType === 'USDC' ? 6 : 9;
+              const displayAmount = Math.abs(amount) / Math.pow(10, decimals);
+              
               const tx = {
                 signature: sig,
                 timestamp: new Date((details.blockTime || 0) * 1000),
@@ -177,14 +181,14 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
                 amount: amount,
                 recipientAddress: recipientAddress,
                 status: TransactionStatus.CONFIRMED,
-                description: amount > 0 
-                  ? `${(amount / Math.pow(10, tokenType === 'USDC' ? 6 : 9)).toFixed(tokenType === 'USDC' ? 2 : 4)} ${tokenType} transfer`
+                description: amount !== 0 
+                  ? `${displayAmount.toFixed(decimals === 6 ? 2 : 4)} ${tokenType} transfer`
                   : 'Transaction',
               };
 
               logger.debug('WalletContext', 'Successfully parsed transaction', {
                 signature: sig.substring(0, 10),
-                amount: (amount / Math.pow(10, tokenType === 'USDC' ? 6 : 9)).toFixed(4),
+                amount: displayAmount.toFixed(4),
                 tokenType,
               });
 

@@ -171,10 +171,7 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
     // Get instructions - handle both parsed and unparsed formats
     let instructions = [];
     if (transaction.transaction.message?.instructions) {
-      instructions = transaction.transaction.message.instructions;
-    } else if (transaction.meta?.innerInstructions) {
-      // Fallback to inner instructions if available
-      instructions = transaction.meta.innerInstructions.flatMap((inner: any) => inner.instructions || []);
+      instructions = [...transaction.transaction.message.instructions];
     }
     
     // Also check meta.instructions for parsed format
@@ -197,6 +194,7 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
             recipientAddress = destination;
             transactionType = 'transfer';
             tokenType = 'SOL';
+            logger.debug('parseTransactionDetails', 'Found SOL transfer (send)', { amount: lamports, recipient: destination });
             break;
           }
           // If this wallet is the destination, it's receiving (positive amount)
@@ -205,6 +203,7 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
             recipientAddress = source;
             transactionType = 'transfer';
             tokenType = 'SOL';
+            logger.debug('parseTransactionDetails', 'Found SOL transfer (receive)', { amount: lamports, source });
             break;
           }
         }
@@ -232,6 +231,7 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
             // Check if it's USDC by mint address
             const usdcMint = getUsdcMint().toBase58().toLowerCase();
             tokenType = mint?.toLowerCase() === usdcMint ? 'USDC' : 'TOKEN';
+            logger.debug('parseTransactionDetails', 'Found token transfer (send)', { amount: parsedAmount, tokenType });
             break;
           } else if (destLower === userAddrLower) {
             // User is receiving (positive amount)
@@ -240,14 +240,16 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
             transactionType = 'transfer';
             const usdcMint = getUsdcMint().toBase58().toLowerCase();
             tokenType = mint?.toLowerCase() === usdcMint ? 'USDC' : 'TOKEN';
+            logger.debug('parseTransactionDetails', 'Found token transfer (receive)', { amount: totalAmount, tokenType });
             break;
           }
         }
       }
     }
     
-    // If no amount found, check pre/post balances as fallback
+    // If no amount found in instructions, check pre/post balances as fallback
     if (totalAmount === 0 && transaction.meta) {
+      logger.debug('parseTransactionDetails', 'No amount found in instructions, checking balance changes');
       const preBalances = transaction.meta.preBalances || [];
       const postBalances = transaction.meta.postBalances || [];
       const accountKeys = transaction.transaction.message.accountKeys || [];
@@ -261,13 +263,16 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
       if (userIndex >= 0 && preBalances[userIndex] !== undefined && postBalances[userIndex] !== undefined) {
         const balanceChange = postBalances[userIndex] - preBalances[userIndex];
         if (balanceChange !== 0) {
-          totalAmount = Math.abs(balanceChange);
+          totalAmount = balanceChange; // Keep sign for direction
           transactionType = 'transfer';
           tokenType = 'SOL';
+          recipientAddress = '';
+          logger.debug('parseTransactionDetails', 'Found balance change', { balanceChange });
         }
       }
     }
     
+    logger.debug('parseTransactionDetails', 'Final parsed result', { totalAmount, transactionType, tokenType });
     return { amount: totalAmount, recipientAddress, type: transactionType, tokenType };
   } catch (error) {
     logger.debug('parseTransactionDetails', 'Error parsing transaction', error as Error);

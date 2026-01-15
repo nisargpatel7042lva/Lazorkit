@@ -94,7 +94,7 @@ export const TransactionHistory = () => {
 
                 <div className="text-right flex-shrink-0">
                   <p className={`font-semibold ${tx.amount > 0 ? 'text-[#8b5cf6]' : 'text-[#1a1a1a]'}`}>
-                    {tx.amount > 0 ? '+' : ''}{Math.abs(tx.amount / Math.pow(10, tx.tokenType === 'USDC' ? 6 : 9)).toFixed(tx.tokenType === 'USDC' ? 2 : 4)}{' '}
+                    {tx.amount !== 0 ? (tx.amount > 0 ? '+' : '') : ''}{(Math.abs(tx.amount) / Math.pow(10, tx.tokenType === 'USDC' ? 6 : 9)).toFixed(tx.tokenType === 'USDC' ? 2 : 4)}{' '}
                     {tx.tokenType}
                   </p>
                   <p className="text-xs text-[#1e293b] opacity-60 font-mono">

@@ -5,6 +5,7 @@ A complete guide to all documentation in the Lazorkit Next.js Starter Kit.
 ## Quick Navigation
 
 ### 🚀 Getting Started (Start Here!)
+- **[GETTING_STARTED.md](./GETTING_STARTED.md)** - Beginner-friendly introduction (RECOMMENDED!)
 - **[README.md](./README.md)** - Main documentation with quick start guide
 - **[tutorials/01-getting-started.md](./tutorials/01-getting-started.md)** - Installation and project overview
 
@@ -16,6 +17,7 @@ A complete guide to all documentation in the Lazorkit Next.js Starter Kit.
 ### 🏗️ Technical Documentation
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design and patterns
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - How to deploy to production
 
 ### ✅ Project Info
 - **[COMPLETION_SUMMARY.md](./COMPLETION_SUMMARY.md)** - Project status and features
@@ -29,17 +31,19 @@ A complete guide to all documentation in the Lazorkit Next.js Starter Kit.
 
 **Learning Path (2-3 hours):**
 
-1. Read [README.md](./README.md) - Overview and features (15 min)
-2. Follow [tutorials/01-getting-started.md](./tutorials/01-getting-started.md) - Installation (20 min)
-3. Run `npm install && npm run dev` and explore (15 min)
-4. Read [tutorials/02-passkey-authentication.md](./tutorials/02-passkey-authentication.md) - Understand auth (30 min)
-5. Register a wallet and play with the app (20 min)
+1. Read [GETTING_STARTED.md](./GETTING_STARTED.md) - Beginner intro (20 min) ⭐
+2. Read [README.md](./README.md) - Overview and features (15 min)
+3. Follow [tutorials/01-getting-started.md](./tutorials/01-getting-started.md) - Installation (20 min)
+4. Run `npm install && npm run dev` and explore (15 min)
+5. Read [tutorials/02-passkey-authentication.md](./tutorials/02-passkey-authentication.md) - Understand auth (30 min)
+6. Create your first wallet and test transfers (20 min)
 
 **Why this path?**
-- README gives overview without code
+- GETTING_STARTED explains concepts without code
+- README gives overview of features
 - Tutorial 01 walks through installation step-by-step
 - Playing with the app helps visual learning
-- Tutorial 02 explains what you just experienced
+- Tutorial 02 explains the technology behind it
 
 ### 👨‍💻 JavaScript/React Developers
 
