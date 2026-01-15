@@ -44,12 +44,14 @@ export const PasskeyLogin = ({
     if (autoConnect && !hasAttemptedAuto && isSupported && !isCheckingSupport) {
       // Defer auto-connect to avoid popup blocking
       // This gives the browser a chance to recognize user interaction context
-      const timeoutId = setTimeout(() => {
+      const timeoutId = setTimeout(async () => {
         setHasAttemptedAuto(true);
-        handleAutoConnect().catch((err) => {
-          logger.error('PasskeyLogin', 'Auto-connect failed', err as Error);
+        try {
+          await handleAutoConnect();
+        } catch (err) {
+          logger.error('PasskeyLogin', 'Auto-connect failed', err as any);
           // Silently fail - user can manually click login if needed
-        });
+        }
       }, 500);
 
       return () => clearTimeout(timeoutId);
@@ -90,9 +92,9 @@ export const PasskeyLogin = ({
     } catch (err) {
       toastError(
         'Authentication failed',
-        err instanceof Error ? err.message : 'Please try again'
+        (err as any)?.message || 'Please try again'
       );
-      logger.error('PasskeyLogin', 'Authentication error', err as Error);
+      logger.error('PasskeyLogin', 'Authentication error', err as any);
     }
   };
 

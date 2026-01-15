@@ -56,10 +56,10 @@ export default function DashboardPage() {
   /**
    * Handle successful transfer
    */
-  const handleTransferComplete = async (signature: string) => {
+  const handleTransferComplete = async (signature?: string) => {
     success(
       'Transfer initiated',
-      `Transaction: ${signature.substring(0, 10)}...`
+      'Your transaction has been submitted to the blockchain'
     );
 
     // Refresh balances and transaction history immediately after transfer
@@ -76,7 +76,7 @@ export default function DashboardPage() {
 
         success('Balances updated');
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to refresh data';
+        const errorMessage = (error as any)?.message || 'Failed to refresh data';
         showError(errorMessage);
       }
     }

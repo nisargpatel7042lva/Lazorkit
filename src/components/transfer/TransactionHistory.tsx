@@ -19,13 +19,16 @@ import { ExternalLink, CheckCircle, Clock, AlertCircle } from 'lucide-react';
  */
 export const TransactionHistory = () => {
   const { transactions, isLoadingTransactions } = useWalletContext();
+  const skeletonItems: number[] = [1, 2, 3];
 
   // Debug logging
   React.useEffect(() => {
+    const txCount = (transactions as any)?.length || 0;
+    const txSlice = (transactions as any)?.slice(0, 2) || [];
     console.log('TransactionHistory render:', {
       isLoadingTransactions,
-      transactionCount: transactions.length,
-      transactions: transactions.slice(0, 2), // Show first 2 for debugging
+      transactionCount: txCount,
+      transactions: txSlice, // Show first 2 for debugging
     });
   }, [transactions, isLoadingTransactions]);
 
@@ -36,9 +39,7 @@ export const TransactionHistory = () => {
           <CardTitle>Recent Transactions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
+          <p className="text-slate-500 text-center py-4">Loading transactions...</p>
         </CardContent>
       </Card>
     );

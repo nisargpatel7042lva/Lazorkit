@@ -289,7 +289,8 @@ export const useTransfer = () => {
         // Detailed logging for signing failures
         const err = error as Error;
         if (err.message?.includes('sign') || err.message?.toLowerCase().includes('signing')) {
-          logger.error('useTransfer', 'USDC transfer signing failed', err, {
+          logger.error('useTransfer', 'USDC transfer signing failed', {
+            ...err,
             type: 'SIGNING_FAILURE',
             tokenType: 'USDC',
           });

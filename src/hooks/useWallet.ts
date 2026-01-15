@@ -24,7 +24,7 @@ export const useWallet = () => {
   const { solBalance, usdcBalance, isLoadingBalances, refreshBalances } = useWalletContext();
 
   const [walletAddress, setWalletAddress] = useState<PublicKey | null>(null);
-  const [displayAddress, setDisplayAddress] = useState('');
+  const [displayAddress, setDisplayAddress] = useState<string>('');
   const [createdAt, setCreatedAt] = useState<Date | null>(null);
 
   /**
@@ -97,8 +97,8 @@ export const useWallet = () => {
   return {
     // Address information
     address: walletAddress,
-    displayAddress,
-    shortAddress: displayAddress.substring(0, 10) + '...' + displayAddress.substring(-4),
+    displayAddress: displayAddress as string,
+    shortAddress: (displayAddress as string).slice(0, 10) + '...' + (displayAddress as string).slice(-4),
 
     // Balance information (in smallest units)
     solBalance,

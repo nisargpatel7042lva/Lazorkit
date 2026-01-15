@@ -24,7 +24,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { disconnect, wallet } = useLazorkit();
-  const { displayAddress } = useWallet();
+  const { shortAddress } = useWallet();
   const router = useRouter();
   const pathname = usePathname();
   const { success } = useToast();
@@ -106,7 +106,7 @@ export default function DashboardLayout({
                       <User className="h-3 w-3 text-[#fbbf24]" />
                     </div>
                     <span className="font-mono text-xs font-medium">
-                      {displayAddress.substring(0, 6)}...{displayAddress.substring(displayAddress.length - 4)}
+                      {shortAddress}
                     </span>
                   </Button>
                 </Link>

@@ -48,9 +48,9 @@ export const PasskeyRegister = ({ onSuccess }: PasskeyRegisterProps) => {
     } catch (err) {
       toastError(
         'Registration failed',
-        err instanceof Error ? err.message : 'Please try again'
+        (err as any)?.message || 'Please try again'
       );
-      logger.error('PasskeyRegister', 'Registration error', err as Error);
+      logger.error('PasskeyRegister', 'Registration error', err as any);
     }
   };
 

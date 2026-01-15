@@ -20,7 +20,7 @@ import { useToast } from '@/components/ui/Toast';
 import { Send } from 'lucide-react';
 
 export interface TransferFormProps {
-  onTransferComplete?: (signature: string) => void;
+  onTransferComplete?: (signature: string | undefined) => void;
 }
 
 /**
