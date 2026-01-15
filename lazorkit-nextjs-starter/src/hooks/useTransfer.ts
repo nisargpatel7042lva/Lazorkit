@@ -99,7 +99,7 @@ export const useTransfer = () => {
         logger.info('useTransfer', 'Starting SOL transfer', {
           recipient: recipientAddress.substring(0, 10),
           amount,
-          senderAddress: smartWalletPubkey.toString().substring(0, 10),
+          senderAddress: smartWalletPubkey!.toString().substring(0, 10),
         });
 
         // Validate inputs
@@ -120,7 +120,7 @@ export const useTransfer = () => {
 
         // Create transfer instruction
         const instruction = SystemProgram.transfer({
-          fromPubkey: smartWalletPubkey,
+          fromPubkey: smartWalletPubkey!,
           toPubkey: recipientPubkey,
           lamports: solToLamports(amount),
         });
@@ -203,7 +203,7 @@ export const useTransfer = () => {
         logger.info('useTransfer', 'Starting USDC transfer', {
           recipient: recipientAddress.substring(0, 10),
           amount,
-          senderAddress: smartWalletPubkey.toString().substring(0, 10),
+          senderAddress: smartWalletPubkey!.toString().substring(0, 10),
         });
 
         // Validate inputs
@@ -224,11 +224,11 @@ export const useTransfer = () => {
 
         // Get associated token accounts
         logger.debug('useTransfer', 'Getting associated token accounts', {
-          senderAddress: smartWalletPubkey.toString().substring(0, 10),
+          senderAddress: smartWalletPubkey!.toString().substring(0, 10),
           recipientAddress: recipientPubkey.toString().substring(0, 10),
         });
 
-        const senderUsdcAta = await getAssociatedTokenAddress(getUsdcMint(), smartWalletPubkey);
+        const senderUsdcAta = await getAssociatedTokenAddress(getUsdcMint(), smartWalletPubkey!);
         const recipientUsdcAta = await getAssociatedTokenAddress(getUsdcMint(), recipientPubkey);
 
         logger.debug('useTransfer', 'Associated token accounts retrieved', {
@@ -241,7 +241,7 @@ export const useTransfer = () => {
         const instruction = createTransferInstruction(
           senderUsdcAta,
           recipientUsdcAta,
-          smartWalletPubkey,
+          smartWalletPubkey!,
           amountInUsdc
         );
 
