@@ -5,8 +5,67 @@
  * used throughout the application for type safety and better IDE support.
  */
 
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, TransactionInstruction } from '@solana/web3.js';
 import { TransactionStatus, ToastType } from './constants';
+
+// --- Core Domain Types ---
+
+/**
+ * Supported Token Types
+ * 'SOL' is the native token, others are SPL tokens
+ */
+export type TokenType = 'SOL' | 'USDC' | 'TOKEN';
+
+/**
+ * Token Metadata
+ */
+export interface TokenMetadata {
+  mint: string;
+  symbol: string;
+  decimals: number;
+  name?: string;
+  icon?: string;
+}
+
+/**
+ * On-Chain Transaction Record
+ * Represents a transaction as stored in transaction history
+ */
+export interface StoredTransaction {
+  /** Solana transaction signature */
+  signature: string;
+
+  /** Transaction timestamp */
+  timestamp: Date;
+
+  /** Transaction type (e.g., 'transfer', 'approval') */
+  type: 'transfer' | 'approval' | 'swap' | 'other';
+
+  /** 'SOL' or token symbol for transfers */
+  tokenType: TokenType;
+
+  /** Amount transferred (in raw units/lamports, positive = receive, negative = send) */
+  amount: number;
+
+  /** Display amount (human readable, adjusted for decimals) */
+  displayAmount?: number;
+
+  /** Recipient address */
+  recipientAddress: string;
+
+  /** Current confirmation status */
+  status: TransactionStatus;
+
+  /** Human-readable description */
+  description: string;
+
+  /** Metadata for UI rendering */
+  metadata?: {
+    fee?: number;
+    slot?: number;
+    err?: any;
+  }
+}
 
 /**
  * Wallet Information from Lazorkit SDK
@@ -66,36 +125,6 @@ export interface WalletBalance {
 }
 
 /**
- * On-Chain Transaction Record
- * Represents a transaction as stored in transaction history
- */
-export interface StoredTransaction {
-  /** Solana transaction signature */
-  signature: string;
-
-  /** Transaction timestamp */
-  timestamp: Date;
-
-  /** Transaction type (e.g., 'transfer', 'approval') */
-  type: 'transfer' | 'approval' | 'other';
-
-  /** 'SOL' or token mint address for transfers */
-  tokenType: string;
-
-  /** Amount transferred (in smallest units) */
-  amount: number;
-
-  /** Recipient address */
-  recipientAddress: string;
-
-  /** Current confirmation status */
-  status: TransactionStatus;
-
-  /** Human-readable description */
-  description: string;
-}
-
-/**
  * Transfer Operation Data
  * Used during the transfer form and preview flow
  */
@@ -106,11 +135,11 @@ export interface TransferData {
   /** Raw recipient input before validation */
   recipientInput: string;
 
-  /** Amount to transfer */
+  /** Amount to transfer (string input) */
   amount: string;
 
-  /** Token being transferred ('SOL' or 'USDC') */
-  tokenType: 'SOL' | 'USDC';
+  /** Token being transferred */
+  tokenType: TokenType;
 
   /** Estimated gas fee */
   estimatedGasFee: number | null;
@@ -227,13 +256,13 @@ export interface LazorkitClientOptions {
  */
 export interface SignAndSendTransactionPayload {
   /** Array of transaction instructions */
-  instructions: any[]; // Use proper Instruction type from @solana/web3.js
+  instructions: TransactionInstruction[];
 
   /** Transaction options */
   transactionOptions?: {
     feeToken?: 'SOL' | 'USDC';
     computeUnitLimit?: number;
-    addressLookupTableAccounts?: any[];
+    addressLookupTableAccounts?: PublicKey[];
   };
 }
 

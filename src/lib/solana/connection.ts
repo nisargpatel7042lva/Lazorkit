@@ -123,10 +123,10 @@ export const getWalletBalances = async (address: string | PublicKey) => {
   try {
     // Fetch SOL balance first
     const solBalance = await getSolBalance(address);
-    
+
     // Add a small delay between RPC calls to reduce rate limiting
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     // Try to fetch USDC balance, but don't fail the whole operation if it fails
     let usdcBalance = 0;
     try {
@@ -154,31 +154,42 @@ export const getWalletBalances = async (address: string | PublicKey) => {
  * @param userAddress - Wallet address to check transfers for
  * @returns Parsed transaction details with amount and recipient
  */
-export const parseTransactionDetails = (transaction: any, userAddress: string | PublicKey) => {
+/**
+ * Parses transaction details to extract transfer information
+ * @param transaction - Raw transaction from Solana
+ * @param userAddress - Wallet address to check transfers for
+ * @returns Parsed transaction details with amount and recipient
+ */
+export const parseTransactionDetails = (transaction: any, userAddress: string | PublicKey): {
+  amount: number;
+  recipientAddress: string;
+  type: 'transfer' | 'approval' | 'swap' | 'other';
+  tokenType: import('../lazorkit/types').TokenType;
+} => {
   const userAddr = typeof userAddress === 'string' ? userAddress : userAddress.toBase58();
   const userAddrLower = userAddr.toLowerCase();
-  
+
   let totalAmount = 0;
   let recipientAddress = '';
-  let transactionType = 'other';
-  let tokenType = 'SOL';
-  
+  let transactionType: 'transfer' | 'approval' | 'swap' | 'other' = 'other';
+  let tokenType: import('../lazorkit/types').TokenType = 'SOL';
+
   try {
     if (!transaction || !transaction.transaction) {
       return { amount: 0, recipientAddress: '', type: 'other', tokenType: 'SOL' };
     }
 
     // Get instructions - handle both parsed and unparsed formats
-    let instructions = [];
+    let instructions: any[] = [];
     if (transaction.transaction.message?.instructions) {
       instructions = [...transaction.transaction.message.instructions];
     }
-    
+
     // Also check meta.instructions for parsed format
     if (transaction.meta?.instructions) {
       instructions = [...instructions, ...transaction.meta.instructions];
     }
-    
+
     // Parse instructions to find transfer amount
     for (const instruction of instructions) {
       // Check for system program transfers (SOL)
@@ -187,14 +198,13 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
           const { source, destination, lamports } = instruction.parsed.info;
           const sourceLower = (source || '').toLowerCase();
           const destLower = (destination || '').toLowerCase();
-          
+
           // If this wallet is the source, it's sending (negative amount)
           if (sourceLower === userAddrLower) {
             totalAmount = -lamports; // Negative for outgoing
             recipientAddress = destination;
             transactionType = 'transfer';
             tokenType = 'SOL';
-            logger.debug('parseTransactionDetails', 'Found SOL transfer (send)', { amount: lamports, recipient: destination });
             break;
           }
           // If this wallet is the destination, it's receiving (positive amount)
@@ -203,12 +213,11 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
             recipientAddress = source;
             transactionType = 'transfer';
             tokenType = 'SOL';
-            logger.debug('parseTransactionDetails', 'Found SOL transfer (receive)', { amount: lamports, source });
             break;
           }
         }
       }
-      
+
       // Check for token transfers (SPL) - USDC and other tokens
       if (instruction.program === 'spl-token' || instruction.programId?.toString() === 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
         if (instruction.parsed?.type === 'transfer' || instruction.parsed?.type === 'transferChecked') {
@@ -217,10 +226,10 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
           const source = info.authority || info.source || '';
           const destination = info.destination || '';
           const mint = info.mint || '';
-          
+
           const sourceLower = (source || '').toLowerCase();
           const destLower = (destination || '').toLowerCase();
-          
+
           // Determine if user is sending or receiving
           if (sourceLower === userAddrLower) {
             // User is sending (negative amount)
@@ -231,7 +240,6 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
             // Check if it's USDC by mint address
             const usdcMint = getUsdcMint().toBase58().toLowerCase();
             tokenType = mint?.toLowerCase() === usdcMint ? 'USDC' : 'TOKEN';
-            logger.debug('parseTransactionDetails', 'Found token transfer (send)', { amount: parsedAmount, tokenType });
             break;
           } else if (destLower === userAddrLower) {
             // User is receiving (positive amount)
@@ -240,26 +248,25 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
             transactionType = 'transfer';
             const usdcMint = getUsdcMint().toBase58().toLowerCase();
             tokenType = mint?.toLowerCase() === usdcMint ? 'USDC' : 'TOKEN';
-            logger.debug('parseTransactionDetails', 'Found token transfer (receive)', { amount: totalAmount, tokenType });
             break;
           }
         }
       }
     }
-    
+
     // If no amount found in instructions, check pre/post balances as fallback
     if (totalAmount === 0 && transaction.meta) {
       logger.debug('parseTransactionDetails', 'No amount found in instructions, checking balance changes');
       const preBalances = transaction.meta.preBalances || [];
       const postBalances = transaction.meta.postBalances || [];
       const accountKeys = transaction.transaction.message.accountKeys || [];
-      
+
       // Find user's account index
       const userIndex = accountKeys.findIndex((key: any) => {
         const addr = typeof key === 'string' ? key : key.pubkey?.toString() || '';
         return addr.toLowerCase() === userAddrLower;
       });
-      
+
       if (userIndex >= 0 && preBalances[userIndex] !== undefined && postBalances[userIndex] !== undefined) {
         const balanceChange = postBalances[userIndex] - preBalances[userIndex];
         if (balanceChange !== 0) {
@@ -267,15 +274,13 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
           transactionType = 'transfer';
           tokenType = 'SOL';
           recipientAddress = '';
-          logger.debug('parseTransactionDetails', 'Found balance change', { balanceChange });
         }
       }
     }
-    
-    logger.debug('parseTransactionDetails', 'Final parsed result', { totalAmount, transactionType, tokenType });
+
     return { amount: totalAmount, recipientAddress, type: transactionType, tokenType };
   } catch (error) {
-    logger.debug('parseTransactionDetails', 'Error parsing transaction', error as Error);
+    logger.error('parseTransactionDetails', 'Error parsing transaction', error as Error);
     return { amount: 0, recipientAddress: '', type: 'other', tokenType: 'SOL' };
   }
 };
@@ -297,7 +302,7 @@ export const getTransactionDetails = async (signature: string) => {
     // First check if transaction is confirmed using getSignatureStatus (faster)
     const statuses = await connection.getSignatureStatuses([signature]);
     const status = statuses.value[0];
-    
+
     if (!status || !status.confirmationStatus) {
       logger.debug('getTransactionDetails', 'Transaction not confirmed yet', { signature: signature.substring(0, 10) });
       return null;
@@ -318,13 +323,14 @@ export const getTransactionDetails = async (signature: string) => {
       const parsedTransaction = await connection.getParsedTransaction(signature, {
         maxSupportedTransactionVersion: 0,
       });
-      
+
       if (parsedTransaction) {
         // Merge parsed instructions into transaction object for easier parsing
         if (parsedTransaction.transaction?.message?.instructions) {
-          transaction.transaction = transaction.transaction || {};
-          transaction.transaction.message = transaction.transaction.message || {};
-          transaction.transaction.message.instructions = parsedTransaction.transaction.message.instructions;
+          transaction.transaction = transaction.transaction || {} as any;
+          transaction.transaction.message = transaction.transaction.message || {} as any;
+          // Cast to any to avoid strict type checks on VersionedMessage specific structure
+          (transaction.transaction.message as any).instructions = parsedTransaction.transaction.message.instructions;
         }
       }
     } catch (parseError) {
@@ -337,7 +343,7 @@ export const getTransactionDetails = async (signature: string) => {
     logger.debug('getTransactionDetails', 'Fetched transaction successfully', { signature: signature.substring(0, 10) });
     return transaction;
   } catch (error) {
-    logger.error('getTransactionDetails', 'Failed to fetch transaction', error as Error, { signature: signature.substring(0, 10) });
+    logger.error('getTransactionDetails', `Failed to fetch transaction ${signature.substring(0, 10)}`, error as Error);
     return null;
   }
 };
@@ -352,8 +358,8 @@ export const isTransactionConfirmed = async (signature: string): Promise<boolean
     const connection = getSolanaConnection();
     const status = await connection.getSignatureStatus(signature);
 
-    return status.value?.confirmationStatus === 'confirmed' || 
-           status.value?.confirmationStatus === 'finalized';
+    return status.value?.confirmationStatus === 'confirmed' ||
+      status.value?.confirmationStatus === 'finalized';
   } catch (error) {
     logError('isTransactionConfirmed', error as Error);
     return false;

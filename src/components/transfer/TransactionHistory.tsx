@@ -19,18 +19,19 @@ import { ExternalLink, CheckCircle, Clock, AlertCircle } from 'lucide-react';
  */
 export const TransactionHistory = () => {
   const { transactions, isLoadingTransactions } = useWalletContext();
-  const skeletonItems: number[] = [1, 2, 3];
 
-  // Debug logging
-  React.useEffect(() => {
-    const txCount = (transactions as any)?.length || 0;
-    const txSlice = (transactions as any)?.slice(0, 2) || [];
-    console.log('TransactionHistory render:', {
-      isLoadingTransactions,
-      transactionCount: txCount,
-      transactions: txSlice, // Show first 2 for debugging
-    });
-  }, [transactions, isLoadingTransactions]);
+  // Helper to format displayed amount
+  const formatAmount = (amount: number, decimals: number = 2): string => {
+    try {
+      return amount.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      } as any);
+    } catch {
+      return `${amount}`;
+    }
+  };
+
 
   if (isLoadingTransactions) {
     return (
@@ -45,7 +46,10 @@ export const TransactionHistory = () => {
     );
   }
 
-  if (!transactions || transactions.length === 0) {
+  const txArray = transactions || [];
+  const hasTransactions = (txArray as any).length > 0;
+
+  if (!hasTransactions) {
     return (
       <Card>
         <CardHeader>
@@ -63,12 +67,12 @@ export const TransactionHistory = () => {
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
-        <CardTitle className="text-xl">Recent Transactions ({transactions.length})</CardTitle>
+        <CardTitle>Recent Transactions ({txArray.length})</CardTitle>
       </CardHeader>
 
       <CardContent className="pt-6">
         <div className="space-y-3">
-          {transactions.map((tx) => {
+          {txArray.map((tx) => {
             const statusIcon =
               tx.status === TransactionStatus.CONFIRMED ? (
                 <CheckCircle className="h-5 w-5 text-[#8b5cf6]" />
@@ -77,6 +81,14 @@ export const TransactionHistory = () => {
               ) : (
                 <Clock className="h-5 w-5 text-[#fbbf24] animate-spin" />
               );
+
+            // Use pre-calculated displayAmount from context if available, otherwise fallback (should exist)
+            const amountToDisplay = tx.displayAmount !== undefined
+              ? tx.displayAmount
+              : Math.abs(tx.amount) / (tx.tokenType === 'USDC' ? 1000000 : 1000000000);
+
+            const isPositive = tx.amount > 0;
+            const decimals = tx.tokenType === 'USDC' ? 2 : 4;
 
             return (
               <a
@@ -94,8 +106,8 @@ export const TransactionHistory = () => {
                 </div>
 
                 <div className="text-right flex-shrink-0">
-                  <p className={`font-semibold ${tx.amount > 0 ? 'text-[#8b5cf6]' : 'text-[#1a1a1a]'}`}>
-                    {tx.amount !== 0 ? (tx.amount > 0 ? '+' : '') : ''}{(Math.abs(tx.amount) / Math.pow(10, tx.tokenType === 'USDC' ? 6 : 9)).toFixed(tx.tokenType === 'USDC' ? 2 : 4)}{' '}
+                  <p className={`font-semibold ${isPositive ? 'text-[#8b5cf6]' : 'text-[#1a1a1a]'}`}>
+                    {isPositive ? '+' : ''}{tx.amount < 0 ? '-' : ''}{formatAmount(amountToDisplay, decimals)}{' '}
                     {tx.tokenType}
                   </p>
                   <p className="text-xs text-[#1e293b] opacity-60 font-mono">

@@ -107,7 +107,7 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch balances';
-      
+
       logger.error('WalletContext', 'Balance refresh error', {
         message,
         error: error instanceof Error ? error.stack : String(error),
@@ -153,35 +153,38 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
 
       // Fetch details for transactions in parallel batches to improve performance
       logger.info('WalletContext', 'Fetching transaction details in batches', { count: signatures.length });
-      
-      const txDetailsArray: any[] = [];
+
+      const txDetailsArray: StoredTransaction[] = [];
       const BATCH_SIZE = 5; // Process 5 transactions at a time
-      
+
       // Process transactions in batches
       for (let i = 0; i < signatures.length; i += BATCH_SIZE) {
         const batch = signatures.slice(i, i + BATCH_SIZE);
-        
+
         // Fetch batch in parallel
-        const batchPromises = batch.map(async (sig) => {
+        const batchPromises = batch.map(async (sig): Promise<StoredTransaction | null> => {
           try {
             const details = await getTransactionDetails(sig);
-            
+
             if (details) {
               const { amount, recipientAddress, type, tokenType } = parseTransactionDetails(details, address);
-              
+
               // Calculate display amount based on decimals
               const decimals = tokenType === 'USDC' ? 6 : 9;
               const displayAmount = Math.abs(amount) / Math.pow(10, decimals);
-              
-              const tx = {
+
+              const tx: StoredTransaction = {
                 signature: sig,
                 timestamp: new Date((details.blockTime || 0) * 1000),
-                type: type as 'transfer' | 'other',
-                tokenType: tokenType || 'SOL',
+                type: type,
+                tokenType: tokenType,
                 amount: amount,
+                // Add display amount for UI convenience if needed, though interface might not have it yet.
+                // StoredTransaction interface update included displayAmount? Yes, I added it in types.ts.
+                displayAmount: displayAmount,
                 recipientAddress: recipientAddress,
                 status: TransactionStatus.CONFIRMED,
-                description: amount !== 0 
+                description: amount !== 0
                   ? `${displayAmount.toFixed(decimals === 6 ? 2 : 4)} ${tokenType} transfer`
                   : 'Transaction',
               };
@@ -199,8 +202,8 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
               return {
                 signature: sig,
                 timestamp: new Date(),
-                type: 'other' as const,
-                tokenType: 'SOL' as const,
+                type: 'other',
+                tokenType: 'SOL',
                 amount: 0,
                 recipientAddress: '',
                 status: TransactionStatus.PENDING,
@@ -212,8 +215,8 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
             return {
               signature: sig,
               timestamp: new Date(),
-              type: 'other' as const,
-              tokenType: 'SOL' as const,
+              type: 'other',
+              tokenType: 'SOL',
               amount: 0,
               recipientAddress: '',
               status: TransactionStatus.PENDING,
@@ -221,28 +224,27 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
             };
           }
         });
-        
+
         const batchResults = await Promise.all(batchPromises);
-        txDetailsArray.push(...batchResults);
-        
+        // Filter out nulls (though we strictly return StoredTransaction above, but Promise.all might return null if we returned null above... wait I returned StoredTransaction | null)
+        const validResults = batchResults.filter((tx): tx is StoredTransaction => tx !== null);
+        txDetailsArray.push(...validResults);
+
         // Small delay between batches to avoid rate limiting
         if (i + BATCH_SIZE < signatures.length) {
           await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
 
-      // Filter out any null results
-      const txDetailsResolved = txDetailsArray.filter((tx) => tx !== null);
-
       logger.info('WalletContext', 'Transaction details fetch complete', {
-        count: txDetailsResolved.length,
+        count: txDetailsArray.length,
       });
 
-      setTransactions(txDetailsResolved);
+      setTransactions(txDetailsArray);
 
       logger.info('WalletContext', 'Transaction history refresh complete', {
-        count: txDetailsResolved.length,
-        address: address.toString().substring(0, 10),
+        count: txDetailsArray.length,
+        size: txDetailsArray.length,
       });
     } catch (error) {
       logger.error('WalletContext', 'Failed to refresh transaction history', error as Error);

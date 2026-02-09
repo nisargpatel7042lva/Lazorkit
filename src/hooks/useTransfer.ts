@@ -165,15 +165,21 @@ export const useTransfer = () => {
         setTransferError(errorMessage);
         
         // Detailed logging for signing failures
-        const err = error as Error;
-        if (err.message?.includes('sign') || err.message?.toLowerCase().includes('signing')) {
+        const err = error as any;
+        const errorDetails = {
+          message: err?.message || String(error),
+          code: (err as any)?.code,
+          name: (err as any)?.name,
+          stack: (err as any)?.stack?.split('\n').slice(0, 3).join(' | '),
+        };
+        if ((err?.message || String(error)).toLowerCase().includes('sign')) {
           logger.error('useTransfer', 'SOL transfer signing failed', {
-            ...err,
+            ...errorDetails,
             type: 'SIGNING_FAILURE',
             tokenType: 'SOL',
           });
         } else {
-          logger.error('useTransfer', 'SOL transfer failed', err);
+          logger.error('useTransfer', 'SOL transfer failed', errorDetails);
         }
         
         return { success: false, error: errorMessage };
@@ -287,15 +293,21 @@ export const useTransfer = () => {
         setTransferError(errorMessage);
         
         // Detailed logging for signing failures
-        const err = error as Error;
-        if (err.message?.includes('sign') || err.message?.toLowerCase().includes('signing')) {
+        const err = error as any;
+        const errorDetails = {
+          message: err?.message || String(error),
+          code: (err as any)?.code,
+          name: (err as any)?.name,
+          stack: (err as any)?.stack?.split('\n').slice(0, 3).join(' | '),
+        };
+        if ((err?.message || String(error)).toLowerCase().includes('sign')) {
           logger.error('useTransfer', 'USDC transfer signing failed', {
-            ...err,
+            ...errorDetails,
             type: 'SIGNING_FAILURE',
             tokenType: 'USDC',
           });
         } else {
-          logger.error('useTransfer', 'USDC transfer failed', err);
+          logger.error('useTransfer', 'USDC transfer failed', errorDetails);
         }
         
         return { success: false, error: errorMessage };
