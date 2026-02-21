@@ -11,7 +11,7 @@ import { useWalletContext } from '@/contexts/WalletContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/LoadingSpinner';
 import { formatRelativeTime, getSolscanUrl, abbreviateAddress } from '@/lib/utils/formatting';
-import { TransactionStatus } from '@/lib/lazorkit/types';
+import { TransactionStatus, StoredTransaction } from '@/lib/lazorkit/types';
 import { ExternalLink, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
 /**
@@ -46,8 +46,8 @@ export const TransactionHistory = () => {
     );
   }
 
-  const txArray = transactions || [];
-  const hasTransactions = (txArray as any).length > 0;
+  const txArray: StoredTransaction[] = Array.isArray(transactions) ? transactions : [];
+  const hasTransactions = txArray.length > 0;
 
   if (!hasTransactions) {
     return (
