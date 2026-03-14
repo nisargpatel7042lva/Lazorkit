@@ -20,7 +20,7 @@ export const validateAddress = (address: string): string | null => {
   }
 
   if (!isValidSolanaAddress(address)) {
-    return 'Invalid Solana address format';
+    return 'That doesn\u2019t look like a Solana address. Please paste a full Solana address.';
   }
 
   // Try to construct PublicKey to validate
@@ -65,7 +65,10 @@ export const validateAmount = (
 
   // Check if exceeds balance
   if (parsed > balance) {
-    return { isValid: false, error: 'Insufficient balance' };
+    return {
+      isValid: false,
+      error: 'You are trying to send more than you have in this wallet.',
+    };
   }
 
   // Check for reasonable max amount (prevent accidental huge transfers)

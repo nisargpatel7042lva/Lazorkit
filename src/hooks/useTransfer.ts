@@ -22,6 +22,7 @@ import { tokenToUsdc, solToLamports } from '@/lib/utils/formatting';
 import { mapErrorToMessage } from '@/lib/utils/errors';
 import { logger } from '@/lib/utils/logger';
 import { TransactionStatus, StoredTransaction } from '@/lib/lazorkit/types';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 /**
  * Transfer result type
@@ -36,6 +37,7 @@ interface TransferResult {
  * Hook for handling gasless transfers
  */
 export const useTransfer = () => {
+  const isDemoMode = useDemoMode();
   const { signAndSendTransaction, smartWalletPubkey } = useSdkWallet();
   const { addTransaction } = useWalletContext();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -51,7 +53,7 @@ export const useTransfer = () => {
       return 'Wallet not connected. Please connect your wallet first.';
     }
 
-    if (!signAndSendTransaction) {
+    if (!isDemoMode && !signAndSendTransaction) {
       return 'Wallet connection incomplete. Please reconnect your wallet.';
     }
 
@@ -63,7 +65,7 @@ export const useTransfer = () => {
     }
 
     return null;
-  }, [smartWalletPubkey, signAndSendTransaction]);
+  }, [smartWalletPubkey, isDemoMode, signAndSendTransaction]);
 
   /**
    * Validates recipient address matches user's current address
@@ -114,6 +116,26 @@ export const useTransfer = () => {
           const error = 'Amount must be greater than 0';
           setTransferError(error);
           return { success: false, error };
+        }
+
+        // Demo mode: simulate success so you can show the full flow without real signing
+        if (isDemoMode) {
+          await new Promise((r) => setTimeout(r, 1500));
+          const signature = `demo-${Date.now()}`;
+          setTransactionSignature(signature);
+          const transaction: StoredTransaction = {
+            signature,
+            timestamp: new Date(),
+            type: 'transfer',
+            tokenType: 'SOL',
+            amount: -solToLamports(amount),
+            recipientAddress,
+            status: TransactionStatus.CONFIRMED,
+            description: `[Demo] Transferred ${amount} SOL to ${recipientAddress.substring(0, 10)}...`,
+          };
+          addTransaction(transaction);
+          logger.info('useTransfer', 'SOL transfer simulated (demo mode)', { signature });
+          return { success: true, signature };
         }
 
         const recipientPubkey = new PublicKey(recipientAddress);
@@ -187,7 +209,7 @@ export const useTransfer = () => {
         setIsProcessing(false);
       }
     },
-    [smartWalletPubkey, signAndSendTransaction, validateRecipient, validateWalletSession, addTransaction]
+    [smartWalletPubkey, signAndSendTransaction, validateRecipient, validateWalletSession, addTransaction, isDemoMode]
   );
 
   /**
@@ -227,6 +249,26 @@ export const useTransfer = () => {
           return { success: false, error };
         }
 
+        // Demo mode: simulate success
+        if (isDemoMode) {
+          await new Promise((r) => setTimeout(r, 1500));
+          const signature = `demo-${Date.now()}`;
+          setTransactionSignature(signature);
+          const transaction: StoredTransaction = {
+            signature,
+            timestamp: new Date(),
+            type: 'transfer',
+            tokenType: 'USDC',
+            amount: -tokenToUsdc(amount),
+            recipientAddress,
+            status: TransactionStatus.CONFIRMED,
+            description: `[Demo] Transferred ${amount} USDC to ${recipientAddress.substring(0, 10)}...`,
+          };
+          addTransaction(transaction);
+          logger.info('useTransfer', 'USDC transfer simulated (demo mode)', { signature });
+          return { success: true, signature };
+        }
+
         const recipientPubkey = new PublicKey(recipientAddress);
 
         // Get associated token accounts
@@ -235,8 +277,15 @@ export const useTransfer = () => {
           recipientAddress: recipientPubkey.toString().substring(0, 10),
         });
 
-        const senderUsdcAta = await getAssociatedTokenAddress(getUsdcMint(), smartWalletPubkey!);
-        const recipientUsdcAta = await getAssociatedTokenAddress(getUsdcMint(), recipientPubkey);
+        const senderUsdcAta = await getAssociatedTokenAddress(
+          getUsdcMint(),
+          smartWalletPubkey!,
+          true // allowOwnerOffCurve for smart wallet owner
+        );
+        const recipientUsdcAta = await getAssociatedTokenAddress(
+          getUsdcMint(),
+          recipientPubkey
+        );
 
         logger.debug('useTransfer', 'Associated token accounts retrieved', {
           senderAta: senderUsdcAta.toString().substring(0, 10),
@@ -315,7 +364,7 @@ export const useTransfer = () => {
         setIsProcessing(false);
       }
     },
-    [smartWalletPubkey, signAndSendTransaction, validateRecipient, validateWalletSession, addTransaction]
+    [smartWalletPubkey, signAndSendTransaction, validateRecipient, validateWalletSession, addTransaction, isDemoMode]
   );
 
   /**

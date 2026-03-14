@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/Toast';
 import { Lightbulb, Lock } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { address, refreshBalances } = useWallet();
+  const { address, refreshBalances, solBalance, usdcBalance } = useWallet();
   const { refreshTransactionHistory } = useWalletContext();
   const { success, error: showError } = useToast();
 
@@ -139,6 +139,28 @@ export default function DashboardPage() {
             Your passkey is secured by biometric authentication on this device and never leaves your device.
           </p>
         </div>
+
+        {solBalance === 0 && usdcBalance === 0 && (
+          <div className="bg-white border border-dashed border-[#1a1a1a] rounded-lg p-8 hover:shadow-lg transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#fbbf24] rounded-lg flex items-center justify-center">
+                <Lightbulb className="h-5 w-5 text-[#1a1a1a]" />
+              </div>
+              <h3 className="font-semibold text-[#1a1a1a] text-lg">First time using this wallet?</h3>
+            </div>
+            <p className="text-sm text-[#1e293b] opacity-70 leading-relaxed mb-3">
+              To try a gasless transfer, first request some test SOL on Solana Devnet.
+            </p>
+            <a
+              href="https://airdrop.solana.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-sm font-semibold text-[#8b5cf6] hover:text-[#7c3aed] underline-offset-4 hover:underline"
+            >
+              Open Devnet airdrop faucet
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

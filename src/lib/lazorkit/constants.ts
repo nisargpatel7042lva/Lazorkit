@@ -109,7 +109,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // Transaction Errors
   'transaction_failed': 'Transaction failed. Please check your network and try again.',
   'transaction_timeout': 'Transaction confirmation timed out. Please check Solscan for status.',
-  'signing_failed': 'Failed to sign transaction. Please try again.',
+  'signing_failed': 'Signing failed. If the sign-in portal shows a certificate warning, fix your system clock, try another network (no VPN/proxy), or open https://portal.lazor.sh in a new tab and accept the certificate if prompted.',
+  'webauthn_tls': 'WebAuthn is blocked: the browser sees a TLS/certificate issue. Open https://portal.lazor.sh in a new tab—if you see a certificate warning, fix your system time or use a network without HTTPS inspection (e.g. mobile hotspot).',
   'passkey_mismatch': 'Passkey verification failed. Please authenticate again.',
 
   // Network Errors

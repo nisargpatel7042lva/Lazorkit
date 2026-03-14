@@ -65,10 +65,16 @@ export const getUsdcBalance = async (
     const connection = getSolanaConnection();
     const publicKey = typeof address === 'string' ? new PublicKey(address) : address;
 
-    // Get the associated token account for USDC
+    // Get the associated token account for USDC.
+    // NOTE: Lazorkit smart wallets can be off-curve, so we must allow owner off curve
+    // to avoid TokenOwnerOffCurveError when deriving the ATA.
     let ataAddress: PublicKey;
     try {
-      ataAddress = await getAssociatedTokenAddress(getUsdcMint(), publicKey);
+      ataAddress = await getAssociatedTokenAddress(
+        getUsdcMint(),
+        publicKey,
+        true // allowOwnerOffCurve
+      );
     } catch (error) {
       // Handle TokenOwnerOffCurveError or invalid mint issues
       const errorMsg = (error as any)?.message || '';
@@ -409,7 +415,11 @@ export const waitForTransactionConfirmation = async (
 export const getUsdcATA = async (address: string | PublicKey): Promise<PublicKey> => {
   try {
     const publicKey = typeof address === 'string' ? new PublicKey(address) : address;
-    const ata = await getAssociatedTokenAddress(getUsdcMint(), publicKey);
+    const ata = await getAssociatedTokenAddress(
+      getUsdcMint(),
+      publicKey,
+      true // allowOwnerOffCurve for smart wallet owners
+    );
     return ata;
   } catch (error) {
     logError('getUsdcATA', error as Error);

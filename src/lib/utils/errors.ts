@@ -64,29 +64,39 @@ export const mapErrorToMessage = (
   error: Error | string,
   defaultMessage = 'An unexpected error occurred. Please try again.'
 ): string => {
-  const message = typeof error === 'string' ? error : error.message || '';
+  const err = typeof error === 'string' ? null : (error as { message?: string; details?: string; cause?: { message?: string } });
+  const message = typeof error === 'string' ? error : (error as Error).message || '';
+  const details = err?.details ?? (err?.cause && typeof err.cause === 'object' ? (err.cause as { message?: string }).message : undefined);
+  const fullText = [message, details].filter(Boolean).join(' ');
+
+  // TLS / certificate errors (WebAuthn blocked) - check details first so user sees the real fix
+  if (
+    fullText.includes('TLS certificate') ||
+    fullText.includes('WebAuthn is not supported on sites with TLS') ||
+    fullText.includes('certificate errors') ||
+    fullText.includes('NotAllowedError')
+  ) {
+    return ERROR_MESSAGES['webauthn_tls'] ?? ERROR_MESSAGES['signing_failed'];
+  }
 
   // Check for exact matches in predefined messages
   for (const [key, value] of Object.entries(ERROR_MESSAGES)) {
-    if (message.includes(key) || message.toLowerCase().includes(key.toLowerCase())) {
+    if (fullText.includes(key) || fullText.toLowerCase().includes(key.toLowerCase())) {
       return value;
     }
   }
 
   // Check for DialogManager/Portal errors (Lazorkit SDK)
   if (message.includes('DialogManager') || message.includes('portal')) {
-    // Portal communication failed - usually a signing/auth issue
     if (message.includes('sign') || message.toLowerCase().includes('signing')) {
-      return ERROR_MESSAGES['signing_failed'] || 'Failed to sign transaction. Please try again.';
+      return ERROR_MESSAGES['signing_failed'];
     }
-    // Generic portal error
     return 'Failed to communicate with the authentication portal. Please try again or reconnect your wallet.';
   }
 
-  // Check for signing failures
-  if (message.includes('sign') || message.toLowerCase().includes('signing') || 
-      message.includes('SigningError') || message.includes('passkey')) {
-    return ERROR_MESSAGES['signing_failed'] || 'Failed to sign transaction. Please try again.';
+  // Signing failures (generic) - show message that includes TLS/certificate troubleshooting
+  if (message.includes('sign') || message.toLowerCase().includes('signing') || message.includes('SigningError') || message.includes('passkey')) {
+    return ERROR_MESSAGES['signing_failed'];
   }
 
   // Check for passkey issues

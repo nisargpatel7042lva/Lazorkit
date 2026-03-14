@@ -1,5 +1,11 @@
 # ⚡ Lazorkit Next.js Starter Kit
 
+> **For judges / TL;DR**
+>
+> - Passkey login (no seed phrases)
+> - Gasless SOL and USDC transfers (paymaster-sponsored fees)
+> - Drop-in Next.js starter for Solana smart wallets on Devnet
+
 **Passkey-based Solana wallet with gasless transactions**
 
 A production-ready Next.js 14+ starter template demonstrating the complete Lazorkit SDK integration for building modern Web3 applications with passkey authentication and gasless transactions on Solana Devnet.
@@ -31,7 +37,7 @@ A production-ready Next.js 14+ starter template demonstrating the complete Lazor
 - ✅ **Solscan Integration** - Direct links to view transactions on Solscan
 
 ### Wallet
-- ✅ **Real-time Balances** - SOL and USDC balance display with 5s auto-refresh
+- ✅ **Real-time Balances** - SOL and USDC balance display with on-load + 2 minute auto-refresh (plus manual refresh)
 - ✅ **Address Display** - Copy-to-clipboard and QR code support
 - ✅ **Smart Wallet** - Solana smart account derived from passkey
 - ✅ **Account Management** - Display wallet creation date and features
@@ -79,6 +85,17 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 3. **View Balance** - See your SOL and USDC balances
 4. **Transfer** - Send SOL or USDC gaslessly to another address
 5. **Check History** - View your last 10 transactions
+
+### Demo Mode (for presentations / hackathon)
+
+If the venue network blocks WebAuthn (e.g. TLS certificate issues), you can still show the full UI flow:
+
+1. Log in as usual and go to the dashboard.
+2. **Add `?demo=1` to the URL** — e.g. `http://localhost:3000/dashboard?demo=1` or `https://your-app.vercel.app/dashboard?demo=1`.
+3. A purple banner will show: *"Demo mode — transactions are simulated."*
+4. Use the transfer form as normal: enter recipient, amount, click **Review & Send** → **Confirm Transfer**. The app will **simulate** a successful transfer (no real signing or portal). You’ll see the success toast and a new row in transaction history with a `[Demo]` label.
+
+Use this to demo the product when live signing isn’t possible. Remove `?demo=1` for real transactions.
 
 ## 📁 Project Structure
 
@@ -271,7 +288,7 @@ Authentication
 Balances
 [ ] SOL balance displays correctly
 [ ] USDC balance displays correctly
-[ ] Balance refreshes on interval
+[ ] Balance refreshes on load, on interval, and on manual refresh
 
 Transfers
 [ ] SOL transfer succeeds
@@ -340,11 +357,11 @@ Your app is now live!
 - Verify wallet address
 - Check RPC URL is correct (https://api.devnet.solana.com)
 - Confirm funds are on Devnet, not Mainnet
+- For first-time use, request Devnet SOL from https://airdrop.solana.com and wait a few seconds for the dashboard to refresh
 
 ### Transfer fails with "Insufficient balance"
-- Ensure you have SOL for gas
-- Request airdrop from https://airdrop.solana.com
-- For USDC, confirm balance > amount
+- Ensure you have enough SOL or USDC in this wallet for the amount you are sending
+- Request additional Devnet SOL from https://airdrop.solana.com if needed
 
 See **TROUBLESHOOTING.md** for more solutions.
 

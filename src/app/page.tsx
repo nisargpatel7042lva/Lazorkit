@@ -70,14 +70,18 @@ export default function Home() {
       <div className="flex-1 flex items-center justify-center px-4 py-20">
         <div className="max-w-md w-full">
           {/* Hero Section */}
-          <div className="mb-10">
-            <h2 className="text-5xl font-bold text-[#1a1a1a] mb-4 tracking-tight">
-              {mode === 'login' ? 'Welcome Back' : 'Create Your Wallet'}
+          <div className="mb-10 space-y-3">
+            <h2 className="text-5xl font-bold text-[#1a1a1a] mb-1 tracking-tight">
+              No seed phrase. No gas.
             </h2>
+            <p className="text-xl font-semibold text-[#1a1a1a]">
+              Just your passkey.
+            </p>
             <p className="text-lg text-[#1e293b] opacity-70 leading-relaxed">
-              {mode === 'login'
-                ? 'Login with your passkey to access your Solana wallet'
-                : 'Create a new passkey-based Solana wallet without seed phrases'}
+              Sign in with a WebAuthn passkey to use a Solana smart wallet with gasless SOL and USDC transfers on Devnet.
+            </p>
+            <p className="text-sm text-[#1e293b] opacity-60">
+              This demo runs on <span className="font-semibold">Solana Devnet</span> — safe to try with test funds.
             </p>
           </div>
 

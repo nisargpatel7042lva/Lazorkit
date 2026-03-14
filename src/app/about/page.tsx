@@ -80,6 +80,38 @@ export default function AboutPage() {
           </CardContent>
         </Card>
 
+        {/* Comparison: traditional wallet vs Lazorkit */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#1e293b] rounded-lg flex items-center justify-center">
+                <Shield className="h-5 w-5 text-[#fbbf24]" />
+              </div>
+              <span>Why this is different</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-[#1e293b] opacity-90">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">Traditional Web3 wallet</p>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>Seed phrase to write down and never lose</li>
+                <li>User pays SOL for every transaction</li>
+                <li>Manual address copy/paste and gas settings</li>
+                <li>Harder to onboard non-crypto-native users</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">Lazorkit smart wallet</p>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>Passkey login (fingerprint / face / PIN), no seed phrase</li>
+                <li>Gasless SOL and USDC sends using a paymaster</li>
+                <li>Simple send form with safe defaults and validation</li>
+                <li>Designed as a starter kit other apps can copy</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* How it works */}
         <Card className="mb-8">
           <CardHeader>

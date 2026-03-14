@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Modal } from '@/components/ui/Modal';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const { address, displayAddress, createdAt, isConnected } = useWallet();
@@ -42,7 +43,26 @@ export default function ProfilePage() {
   };
 
   if (!isConnected || !address) {
-    return null;
+    return (
+      <div className="max-w-xl mx-auto mt-16">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">You&apos;re not signed in</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-[#1e293b] opacity-80">
+              To view your profile and wallet details, first create or log in to your Lazorkit wallet.
+            </p>
+            <Link
+              href="/"
+              className="inline-flex items-center text-sm font-semibold text-[#8b5cf6] hover:text-[#7c3aed] underline-offset-4 hover:underline"
+            >
+              Go to the home page to get started
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

@@ -17,6 +17,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
+import { useDemoMode } from '@/hooks/useDemoMode';
+import { Presentation } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -28,6 +30,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { success } = useToast();
+  const isDemoMode = useDemoMode();
 
   /**
    * Handle logout
@@ -67,7 +70,13 @@ export default function DashboardLayout({
                     priority
                   />
                 </div>
-                <h1 className="text-xl font-bold text-[#1a1a1a]">Lazorkit</h1>
+                <div className="flex flex-col">
+                  <h1 className="text-xl font-bold text-[#1a1a1a] leading-tight">Lazorkit</h1>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1e293b] opacity-70">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+                    Solana Devnet
+                  </span>
+                </div>
               </Link>
 
               {/* Navigation Links */}
@@ -130,6 +139,15 @@ export default function DashboardLayout({
             </div>
           </div>
         </nav>
+
+        {/* Demo mode banner */}
+        {isDemoMode && (
+          <div className="bg-[#8b5cf6] text-white px-4 py-2 flex items-center justify-center gap-2 text-sm font-medium">
+            <Presentation className="h-4 w-4 flex-shrink-0" />
+            <span>Demo mode — transactions are simulated so you can show the full flow without signing.</span>
+            <Link href="/dashboard" className="underline opacity-90 hover:opacity-100">Exit demo</Link>
+          </div>
+        )}
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
