@@ -259,13 +259,28 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
       logger.debug('parseTransactionDetails', 'No amount found in instructions, checking balance changes');
       const preBalances = transaction.meta.preBalances || [];
       const postBalances = transaction.meta.postBalances || [];
-      const accountKeys = transaction.transaction.message.accountKeys || [];
+      const msg = transaction.transaction?.message;
+      // Support both legacy (message.accountKeys) and versioned (staticAccountKeys + loadedAddresses)
+      let accountKeys: string[] = [];
+      if (msg?.accountKeys && Array.isArray(msg.accountKeys)) {
+        accountKeys = msg.accountKeys.map((key: any) =>
+          typeof key === 'string' ? key : (key.pubkey?.toString?.() ?? '')
+        );
+      } else if (msg?.staticAccountKeys && Array.isArray(msg.staticAccountKeys)) {
+        const staticKeys = msg.staticAccountKeys.map((k: any) =>
+          typeof k === 'string' ? k : (k?.toString?.() ?? '')
+        );
+        const loaded = transaction.meta?.loadedAddresses;
+        const writable = (loaded?.writable || []).map((a: any) =>
+          typeof a === 'string' ? a : (a?.toString?.() ?? '')
+        );
+        const readonly = (loaded?.readonly || []).map((a: any) =>
+          typeof a === 'string' ? a : (a?.toString?.() ?? '')
+        );
+        accountKeys = [...staticKeys, ...writable, ...readonly];
+      }
 
-      // Find user's account index
-      const userIndex = accountKeys.findIndex((key: any) => {
-        const addr = typeof key === 'string' ? key : key.pubkey?.toString() || '';
-        return addr.toLowerCase() === userAddrLower;
-      });
+      const userIndex = accountKeys.findIndex((addr) => addr?.toLowerCase() === userAddrLower);
 
       if (userIndex >= 0 && preBalances[userIndex] !== undefined && postBalances[userIndex] !== undefined) {
         const balanceChange = postBalances[userIndex] - preBalances[userIndex];
@@ -299,22 +314,16 @@ export const getTransactionDetails = async (signature: string) => {
       signature: signature.substring(0, 10),
     });
 
-    // First check if transaction is confirmed using getSignatureStatus (faster)
-    const statuses = await connection.getSignatureStatuses([signature]);
-    const status = statuses.value[0];
-
-    if (!status || !status.confirmationStatus) {
-      logger.debug('getTransactionDetails', 'Transaction not confirmed yet', { signature: signature.substring(0, 10) });
-      return null;
-    }
-
-    // Get transaction details with parsed format for better instruction parsing
+    // Fetch transaction first; don't require confirmation status so we can show
+    // amounts for recently landed txs while RPC catch-up (avoids showing 0.0000 SOL).
     const transaction = await connection.getTransaction(signature, {
       maxSupportedTransactionVersion: 0,
     });
 
     if (!transaction) {
-      logger.warn('getTransactionDetails', 'Transaction not found', { signature: signature.substring(0, 10) });
+      logger.debug('getTransactionDetails', 'Transaction not found or not in block yet', {
+        signature: signature.substring(0, 10),
+      });
       return null;
     }
 
