@@ -42,8 +42,8 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <div className="relative w-8 h-8 flex items-center justify-center">
               <Image
-                src="/image.png"
-                alt="SolPass Logo"
+                src="/logo.png"
+                alt="Lazorkit Logo"
                 width={32}
                 height={32}
                 className="object-contain"
@@ -51,7 +51,7 @@ export default function Home() {
               />
             </div>
             <h1 className="text-2xl font-bold text-[#1a1a1a]">
-              SolPass
+              Lazorkit
             </h1>
           </div>
         </div>

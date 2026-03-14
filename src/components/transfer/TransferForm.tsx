@@ -17,7 +17,7 @@ import { Modal } from '@/components/ui/Modal';
 import { validateTransfer } from '@/lib/utils/validation';
 import { lamportsToSol, usdcToToken, parseAmountInput } from '@/lib/utils/formatting';
 import { useToast } from '@/components/ui/Toast';
-import { Send } from 'lucide-react';
+import { Send, Info } from 'lucide-react';
 
 export interface TransferFormProps {
   onTransferComplete?: (signature: string | undefined) => void;
@@ -35,6 +35,7 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
   const [recipientAddress, setRecipientAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [showSendInfo, setShowSendInfo] = useState(false);
   const [validation, setValidation] = useState({ 
     isValid: false, 
     addressError: undefined as string | undefined, 
@@ -102,6 +103,14 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
               <Send className="h-4 w-4 text-white" />
             </div>
             <span>Send Funds</span>
+            <button
+              type="button"
+              onClick={() => setShowSendInfo(true)}
+              className="ml-1 p-1 rounded-full text-[#1e293b] hover:bg-[#f1f5f9] hover:text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] focus:ring-offset-1 transition-colors"
+              aria-label="How to send funds"
+            >
+              <Info className="h-5 w-5" />
+            </button>
           </CardTitle>
         </CardHeader>
 
@@ -176,6 +185,37 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Send Funds guidance modal */}
+      <Modal
+        isOpen={showSendInfo}
+        title="How to send funds"
+        onClose={() => setShowSendInfo(false)}
+        size="md"
+      >
+        <div className="space-y-4 text-[#1e293b]">
+          <p className="text-sm opacity-90">
+            Follow these steps to send SOL or USDC from your wallet:
+          </p>
+          <ol className="list-decimal list-inside space-y-3 text-sm">
+            <li>
+              <strong>Choose token</strong> — Select SOL or USDC at the top.
+            </li>
+            <li>
+              <strong>Recipient address</strong> — Paste the recipient’s Solana wallet address. It must be a valid base58 address.
+            </li>
+            <li>
+              <strong>Amount</strong> — Enter the amount to send. It cannot exceed your available balance.
+            </li>
+            <li>
+              <strong>Review & Send</strong> — Click the button to open a confirmation screen, then confirm to complete the transfer.
+            </li>
+          </ol>
+          <p className="text-xs opacity-70 pt-2 border-t border-[#1a1a1a]">
+            No SOL is needed for gas — the paymaster covers transaction fees.
+          </p>
+        </div>
+      </Modal>
 
       {/* Preview Modal */}
       <Modal

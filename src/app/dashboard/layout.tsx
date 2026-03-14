@@ -59,15 +59,15 @@ export default function DashboardLayout({
               <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <div className="relative w-9 h-9 flex items-center justify-center">
                   <Image
-                    src="/image.png"
-                    alt="SolPass Logo"
+                    src="/logo.png"
+                    alt="Lazorkit Logo"
                     width={36}
                     height={36}
                     className="object-contain"
                     priority
                   />
                 </div>
-                <h1 className="text-xl font-bold text-[#1a1a1a]">SolPass</h1>
+                <h1 className="text-xl font-bold text-[#1a1a1a]">Lazorkit</h1>
               </Link>
 
               {/* Navigation Links */}
