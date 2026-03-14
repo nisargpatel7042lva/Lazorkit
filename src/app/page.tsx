@@ -12,6 +12,7 @@ import { PasskeyLogin } from '@/components/auth/PasskeyLogin';
 import { PasskeyRegister } from '@/components/auth/PasskeyRegister';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Home() {
   const { isConnected } = useLazorkit();
@@ -39,20 +40,28 @@ export default function Home() {
       {/* Header */}
       <div className="bg-white border-b border-[#1a1a1a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-3">
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <Image
-                src="/logo.png"
-                alt="Lazorkit Logo"
-                width={32}
-                height={32}
-                className="object-contain"
-                priority
-              />
-            </div>
-            <h1 className="text-2xl font-bold text-[#1a1a1a]">
-              Lazorkit
-            </h1>
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="relative w-8 h-8 flex items-center justify-center">
+                <Image
+                  src="/navbar-logo.png"
+                  alt="Lazorkit Logo"
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <h1 className="text-2xl font-bold text-[#1a1a1a]">
+                Lazorkit
+              </h1>
+            </Link>
+            <Link
+              href="/about"
+              className="text-[#1e293b] opacity-70 hover:text-[#8b5cf6] hover:opacity-100 font-medium transition-colors"
+            >
+              About
+            </Link>
           </div>
         </div>
       </div>

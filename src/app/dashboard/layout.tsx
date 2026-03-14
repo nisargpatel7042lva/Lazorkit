@@ -59,7 +59,7 @@ export default function DashboardLayout({
               <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <div className="relative w-9 h-9 flex items-center justify-center">
                   <Image
-                    src="/logo.png"
+                    src="/navbar-logo.png"
                     alt="Lazorkit Logo"
                     width={36}
                     height={36}
@@ -91,6 +91,12 @@ export default function DashboardLayout({
                   }`}
                 >
                   Profile
+                </Link>
+                <Link 
+                  href="/about" 
+                  className="px-4 py-2 rounded-lg font-medium text-[#1e293b] opacity-70 hover:text-[#8b5cf6] hover:opacity-100 hover:bg-[#faf9f6] transition-all"
+                >
+                  About
                 </Link>
               </div>
 
