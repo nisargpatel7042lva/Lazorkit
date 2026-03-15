@@ -144,21 +144,23 @@ export const validateEmail = (email: string): string | null => {
 /**
  * Validates recipient and amount for a transfer
  * @param recipientAddress - Recipient address string
- * @param amount - Amount to transfer
- * @param balance - Available balance
+ * @param amount - Amount to transfer (as string)
+ * @param balance - Available balance in display units (SOL or USDC)
+ * @param decimals - Token decimals (9 for SOL, 6 for USDC). Default 6.
  * @returns Object with validation results
  */
 export const validateTransfer = (
   recipientAddress: string,
   amount: string,
-  balance: number
+  balance: number,
+  decimals: number = 6
 ): {
   isValid: boolean;
   addressError: string | undefined;
   amountError: string | undefined;
 } => {
   const addressError = validateAddress(recipientAddress);
-  const amountValidation = validateAmount(amount, balance);
+  const amountValidation = validateAmount(amount, balance, decimals);
 
   return {
     isValid: !addressError && amountValidation.isValid,

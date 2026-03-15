@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SolPass - Passkey Wallet",
-  description: "Secure Solana wallet with passkey authentication and gasless transactions",
+  title: "Lazorkit - Passkey Wallet",
+  description: "Solana smart wallet with passkey authentication and gasless transactions",
   icons: {
     icon: "/favicon.ico",
   },

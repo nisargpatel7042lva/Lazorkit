@@ -11,7 +11,7 @@ import {
   LAMPORTS_PER_SOL,
   ParsedAccountData,
 } from '@solana/web3.js';
-import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { getAssociatedTokenAddress, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { SOLANA_RPC_URL, getUsdcMint } from '../lazorkit/constants';
 import { logError } from '../utils/errors';
 import { logger } from '../utils/logger';
@@ -185,82 +185,150 @@ export const parseTransactionDetails = (transaction: any, userAddress: string | 
       return { amount: 0, recipientAddress: '', type: 'other', tokenType: 'SOL' };
     }
 
-    // Get instructions - handle both parsed and unparsed formats
+    // Get instructions - top-level + meta.instructions + innerInstructions (CPIs)
     let instructions: any[] = [];
     if (transaction.transaction.message?.instructions) {
       instructions = [...transaction.transaction.message.instructions];
     }
-
-    // Also check meta.instructions for parsed format
     if (transaction.meta?.instructions) {
       instructions = [...instructions, ...transaction.meta.instructions];
     }
+    const inner = transaction.meta?.innerInstructions;
+    if (Array.isArray(inner)) {
+      for (const innerBlock of inner) {
+        if (Array.isArray(innerBlock.instructions)) {
+          instructions = [...instructions, ...innerBlock.instructions];
+        }
+      }
+    }
 
-    // Parse instructions to find transfer amount
+    const userPubkey = typeof userAddress === 'string' ? new PublicKey(userAddress) : userAddress;
+    const usdcMintB58 = getUsdcMint().toBase58().toLowerCase();
+    const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+
+    const isSplTokenInstruction = (ix: any): boolean => {
+      const prog = ix.program;
+      const progId = ix.programId?.toString?.() ?? ix.programId;
+      if (prog === 'spl-token' || progId === TOKEN_PROGRAM_ID) return true;
+      if (typeof prog === 'string' && prog.toLowerCase().includes('token')) return true;
+      return false;
+    };
+
+    // Process SPL token transfers FIRST so USDC is preferred when a tx has both SOL and token moves
     for (const instruction of instructions) {
-      // Check for system program transfers (SOL)
-      if (instruction.program === 'system' || instruction.programId?.toString() === '11111111111111111111111111111111') {
-        if (instruction.parsed?.type === 'transfer') {
-          const { source, destination, lamports } = instruction.parsed.info;
-          const sourceLower = (source || '').toLowerCase();
-          const destLower = (destination || '').toLowerCase();
+      if (!isSplTokenInstruction(instruction)) continue;
+      const parsed = instruction.parsed;
+      if (parsed?.type !== 'transfer' && parsed?.type !== 'transferChecked') continue;
 
-          // If this wallet is the source, it's sending (negative amount)
-          if (sourceLower === userAddrLower) {
-            totalAmount = -lamports; // Negative for outgoing
+      const info = parsed.info || {};
+      const amount = info.tokenAmount?.amount ?? info.amount ?? 0;
+      const authority = (info.authority ?? info.owner ?? info.source ?? '').toString().trim().toLowerCase();
+      const source = (info.source ?? '').toString().trim().toLowerCase();
+      const destination = (info.destination ?? '').toString().trim().toLowerCase();
+      const mint = (info.mint ?? '').toString().trim().toLowerCase();
+
+      const isSender = authority === userAddrLower;
+      let isReceiver = false;
+      if (mint && destination) {
+        try {
+          const mintPk = new PublicKey(mint);
+          const userAta = getAssociatedTokenAddressSync(mintPk, userPubkey, true);
+          isReceiver = destination === userAta.toBase58().toLowerCase();
+        } catch {
+          // ignore
+        }
+      }
+      // Fallback: if source is user's USDC ATA, user is sender
+      if (!isSender && !isReceiver && source && mint === usdcMintB58) {
+        try {
+          const mintPk = new PublicKey(mint);
+          const userAta = getAssociatedTokenAddressSync(mintPk, userPubkey, true);
+          if (source === userAta.toBase58().toLowerCase()) {
+            const parsedAmount = typeof amount === 'string' ? parseInt(amount, 10) : Number(amount);
+            totalAmount = -parsedAmount;
             recipientAddress = destination;
             transactionType = 'transfer';
-            tokenType = 'SOL';
+            tokenType = 'USDC';
             break;
           }
-          // If this wallet is the destination, it's receiving (positive amount)
-          else if (destLower === userAddrLower) {
-            totalAmount = lamports; // Positive for incoming
-            recipientAddress = source;
-            transactionType = 'transfer';
-            tokenType = 'SOL';
-            break;
-          }
+        } catch {
+          // ignore
         }
       }
 
-      // Check for token transfers (SPL) - USDC and other tokens
-      if (instruction.program === 'spl-token' || instruction.programId?.toString() === 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
-        if (instruction.parsed?.type === 'transfer' || instruction.parsed?.type === 'transferChecked') {
-          const info = instruction.parsed.info;
-          const amount = info.tokenAmount?.amount || info.amount || 0;
-          const source = info.authority || info.source || '';
-          const destination = info.destination || '';
-          const mint = info.mint || '';
+      if (isSender) {
+        const parsedAmount = typeof amount === 'string' ? parseInt(amount, 10) : Number(amount);
+        totalAmount = -parsedAmount;
+        recipientAddress = destination;
+        transactionType = 'transfer';
+        tokenType = mint === usdcMintB58 ? 'USDC' : 'TOKEN';
+        break;
+      }
+      if (isReceiver) {
+        const parsedAmount = typeof amount === 'string' ? parseInt(amount, 10) : Number(amount);
+        totalAmount = parsedAmount;
+        recipientAddress = authority || '';
+        transactionType = 'transfer';
+        tokenType = mint === usdcMintB58 ? 'USDC' : 'TOKEN';
+        break;
+      }
+    }
 
-          const sourceLower = (source || '').toLowerCase();
-          const destLower = (destination || '').toLowerCase();
+    // If no SPL match, check system program transfers (SOL)
+    if (totalAmount === 0 && transactionType === 'other') {
+      for (const instruction of instructions) {
+        if (instruction.program === 'system' || instruction.programId?.toString() === '11111111111111111111111111111111') {
+          if (instruction.parsed?.type === 'transfer') {
+            const { source, destination, lamports } = instruction.parsed.info;
+            const sourceLower = (source || '').toLowerCase();
+            const destLower = (destination || '').toLowerCase();
 
-          // Determine if user is sending or receiving
-          if (sourceLower === userAddrLower) {
-            // User is sending (negative amount)
-            const parsedAmount = typeof amount === 'string' ? parseInt(amount, 10) : amount;
-            totalAmount = -parsedAmount; // Negative for outgoing
-            recipientAddress = destination;
+            if (sourceLower === userAddrLower) {
+              totalAmount = -lamports;
+              recipientAddress = destination;
+              transactionType = 'transfer';
+              tokenType = 'SOL';
+              break;
+            }
+            if (destLower === userAddrLower) {
+              totalAmount = lamports;
+              recipientAddress = source;
+              transactionType = 'transfer';
+              tokenType = 'SOL';
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback: use token balance changes so USDC shows correctly when instruction parsing misses it
+    if (totalAmount === 0 && transactionType === 'other' && transaction.meta) {
+      const preToken = (transaction.meta as any).preTokenBalances as Array<{ mint?: string; owner?: string; uiTokenAmount?: { amount: string }; tokenAmount?: { amount: string } }> | undefined;
+      const postToken = (transaction.meta as any).postTokenBalances as Array<{ mint?: string; owner?: string; uiTokenAmount?: { amount: string }; tokenAmount?: { amount: string } }> | undefined;
+      if (Array.isArray(postToken)) {
+        for (const post of postToken) {
+          const postMint = (post.mint ?? '').toLowerCase();
+          const postOwner = (post.owner ?? '').toLowerCase();
+          if (postOwner !== userAddrLower || postMint !== usdcMintB58) continue;
+          const pre = Array.isArray(preToken) ? preToken.find((p: any) => (p.mint ?? '').toLowerCase() === usdcMintB58 && (p.owner ?? '').toLowerCase() === userAddrLower) : undefined;
+          const preAmount = pre ? (pre.tokenAmount?.amount ?? pre.uiTokenAmount?.amount ?? '0') : '0';
+          const postAmount = post.tokenAmount?.amount ?? post.uiTokenAmount?.amount ?? '0';
+          const preVal = parseInt(String(preAmount), 10) || 0;
+          const postVal = parseInt(String(postAmount), 10) || 0;
+          const diff = postVal - preVal;
+          if (diff !== 0) {
+            totalAmount = diff;
             transactionType = 'transfer';
-            // Check if it's USDC by mint address
-            const usdcMint = getUsdcMint().toBase58().toLowerCase();
-            tokenType = mint?.toLowerCase() === usdcMint ? 'USDC' : 'TOKEN';
-            break;
-          } else if (destLower === userAddrLower) {
-            // User is receiving (positive amount)
-            totalAmount = typeof amount === 'string' ? parseInt(amount, 10) : amount;
-            recipientAddress = source;
-            transactionType = 'transfer';
-            const usdcMint = getUsdcMint().toBase58().toLowerCase();
-            tokenType = mint?.toLowerCase() === usdcMint ? 'USDC' : 'TOKEN';
+            tokenType = 'USDC';
+            recipientAddress = '';
             break;
           }
         }
       }
     }
 
-    // If no amount found in instructions, check pre/post balances as fallback
+    // If no amount found in instructions, check pre/post SOL balances as fallback
     if (totalAmount === 0 && transaction.meta) {
       logger.debug('parseTransactionDetails', 'No amount found in instructions, checking balance changes');
       const preBalances = transaction.meta.preBalances || [];

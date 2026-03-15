@@ -49,9 +49,10 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
    */
   useEffect(() => {
     const parsedAmount = parseAmountInput(amount) || 0;
-    const result = validateTransfer(recipientAddress, String(parsedAmount), balance);
+    const decimals = tokenType === 'SOL' ? 9 : 6;
+    const result = validateTransfer(recipientAddress, String(parsedAmount), balance, decimals);
     setValidation(result);
-  }, [recipientAddress, amount, balance]);
+  }, [recipientAddress, amount, balance, tokenType]);
 
   /**
    * Handle transfer submission (shows preview first)

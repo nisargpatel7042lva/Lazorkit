@@ -90,13 +90,18 @@ export const TransactionHistory = () => {
             const isPositive = tx.amount > 0;
             const decimals = tx.tokenType === 'USDC' ? 2 : 4;
 
+            const isDemoTx = tx.signature.startsWith('demo-');
             return (
-              <a
+              <div
                 key={tx.signature}
+                className={`flex items-center gap-4 p-4 bg-[#faf9f6] border border-[#1a1a1a] rounded-lg transition-all ${!isDemoTx ? 'hover:bg-[#f5f5f0] hover:shadow-md' : ''}`}
+              >
+                {!isDemoTx ? (
+              <a
                 href={getSolscanUrl(tx.signature, 'devnet')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 bg-[#faf9f6] hover:bg-[#f5f5f0] hover:shadow-md border border-[#1a1a1a] rounded-lg transition-all"
+                className="flex flex-1 items-center gap-4 min-w-0"
               >
                 {statusIcon}
 
@@ -117,6 +122,23 @@ export const TransactionHistory = () => {
 
                 <ExternalLink className="h-4 w-4 text-[#1e293b] opacity-50 flex-shrink-0" />
               </a>
+                ) : (
+                  <>
+                {statusIcon}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-[#1a1a1a] truncate">{tx.description}</p>
+                  <p className="text-xs text-[#1e293b] opacity-60">{formatRelativeTime(tx.timestamp)}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className={`font-semibold ${isPositive ? 'text-[#8b5cf6]' : 'text-[#1a1a1a]'}`}>
+                    {isPositive ? '+' : ''}{tx.amount < 0 ? '-' : ''}{formatAmount(amountToDisplay, decimals)}{' '}
+                    {tx.tokenType}
+                  </p>
+                  <p className="text-xs text-[#1e293b] opacity-60">Simulated</p>
+                </div>
+                  </>
+                )}
+              </div>
             );
           })}
         </div>
