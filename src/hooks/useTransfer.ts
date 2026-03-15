@@ -13,8 +13,13 @@
 
 import { useCallback, useState } from 'react';
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { getAssociatedTokenAddress, createTransferInstruction } from '@solana/spl-token';
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  createAssociatedTokenAccountIdempotentInstructionWithDerivation,
+} from '@solana/spl-token';
 import { useWallet as useSdkWallet } from '@lazorkit/wallet';
+import { getSolanaConnection } from '@/lib/solana/connection';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { getUsdcMint, USDC_DECIMALS } from '@/lib/lazorkit/constants';
 import { validateTransfer, validateNotOwnAddress } from '@/lib/utils/validation';
@@ -277,13 +282,14 @@ export const useTransfer = () => {
           recipientAddress: recipientPubkey.toString().substring(0, 10),
         });
 
+        const usdcMint = getUsdcMint();
         const senderUsdcAta = await getAssociatedTokenAddress(
-          getUsdcMint(),
+          usdcMint,
           smartWalletPubkey!,
           true // allowOwnerOffCurve for smart wallet owner
         );
         const recipientUsdcAta = await getAssociatedTokenAddress(
-          getUsdcMint(),
+          usdcMint,
           recipientPubkey
         );
 
@@ -292,27 +298,60 @@ export const useTransfer = () => {
           recipientAta: recipientUsdcAta.toString().substring(0, 10),
         });
 
-        // Create USDC transfer instruction
+        const connection = getSolanaConnection();
+        const instructions: Parameters<typeof signAndSendTransaction>[0]['instructions'] = [];
+
+        // Ensure sender USDC ATA exists (InvalidAccountData if missing)
+        const senderAtaInfo = await connection.getAccountInfo(senderUsdcAta);
+        if (!senderAtaInfo) {
+          instructions.push(
+            createAssociatedTokenAccountIdempotentInstructionWithDerivation(
+              smartWalletPubkey!,
+              smartWalletPubkey!,
+              usdcMint,
+              true // allowOwnerOffCurve for smart wallet
+            )
+          );
+          logger.debug('useTransfer', 'Added create sender USDC ATA instruction');
+        }
+
+        // Ensure recipient USDC ATA exists
+        const recipientAtaInfo = await connection.getAccountInfo(recipientUsdcAta);
+        if (!recipientAtaInfo) {
+          instructions.push(
+            createAssociatedTokenAccountIdempotentInstructionWithDerivation(
+              smartWalletPubkey!,
+              recipientPubkey,
+              usdcMint,
+              false
+            )
+          );
+          logger.debug('useTransfer', 'Added create recipient USDC ATA instruction');
+        }
+
+        // USDC transfer instruction
         const amountInUsdc = BigInt(tokenToUsdc(amount));
-        const instruction = createTransferInstruction(
-          senderUsdcAta,
-          recipientUsdcAta,
-          smartWalletPubkey!,
-          amountInUsdc
+        instructions.push(
+          createTransferInstruction(
+            senderUsdcAta,
+            recipientUsdcAta,
+            smartWalletPubkey!,
+            amountInUsdc
+          )
         );
 
         logger.debug('useTransfer', 'USDC transfer instruction created', {
           amount: amount.toString(),
-          instruction: instruction.programId.toString().substring(0, 10),
+          instructionCount: instructions.length,
         });
 
         // Sign and send via Lazorkit (gasless, paid in USDC)
         logger.info('useTransfer', 'Sending USDC transaction to Lazorkit portal...');
         const signature = await signAndSendTransaction({
-          instructions: [instruction],
+          instructions,
           transactionOptions: {
             feeToken: 'USDC', // Pay gas in USDC
-            computeUnitLimit: 200_000,
+            computeUnitLimit: 400_000, // higher to allow ATA creation if needed
           },
         });
 

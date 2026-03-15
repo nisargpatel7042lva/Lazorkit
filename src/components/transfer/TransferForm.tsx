@@ -17,7 +17,9 @@ import { Modal } from '@/components/ui/Modal';
 import { validateTransfer } from '@/lib/utils/validation';
 import { lamportsToSol, usdcToToken, parseAmountInput } from '@/lib/utils/formatting';
 import { useToast } from '@/components/ui/Toast';
-import { Send, Info } from 'lucide-react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Send, Info, HelpCircle } from 'lucide-react';
 
 export interface TransferFormProps {
   onTransferComplete?: (signature: string | undefined) => void;
@@ -30,6 +32,10 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
   const { transfer, isProcessing, error: transferError } = useTransfer();
   const { solBalance, usdcBalance, isConnected } = useWallet();
   const { warning } = useToast();
+  const searchParams = useSearchParams();
+  const isSigningError = transferError && /sign|tls|certificate|webauthn|portal|passkey/i.test(transferError);
+  const isDemoMode = searchParams?.get('demo') === '1';
+  const showDemoLink = !isDemoMode;
 
   const [tokenType, setTokenType] = useState<'SOL' | 'USDC'>('SOL');
   const [recipientAddress, setRecipientAddress] = useState('');
@@ -165,8 +171,33 @@ export const TransferForm = ({ onTransferComplete }: TransferFormProps) => {
 
             {/* Error Message */}
             {transferError && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-700">{transferError}</p>
+              <div className="space-y-3">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700">{transferError}</p>
+                </div>
+                {/* Signing blocked? Show ways to fix or use demo mode */}
+                {isSigningError && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                    <p className="text-sm font-medium text-amber-900 flex items-center gap-2">
+                      <HelpCircle className="h-4 w-4 flex-shrink-0" />
+                      Signing blocked? Try this:
+                    </p>
+                    <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+                      <li>Fix your system date and time (wrong clock causes certificate errors)</li>
+                      <li>Try a different network (e.g. mobile hotspot) if you’re on corporate WiFi or VPN</li>
+                      <li>Open <a href="https://portal.lazor.sh" target="_blank" rel="noopener noreferrer" className="underline font-medium">portal.lazor.sh</a> in a new tab — if you see a certificate warning, fix it first</li>
+                    </ul>
+                    {showDemoLink && (
+                      <p className="text-sm text-amber-900 pt-1">
+                        To demo the app without signing, use{' '}
+                        <Link href="/dashboard?demo=1" className="font-semibold text-[#8b5cf6] hover:text-[#7c3aed] underline underline-offset-2">
+                          Demo mode
+                        </Link>
+                        {' '}(transfers are simulated).
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
